@@ -1,0 +1,3824 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Highlights Reading Log</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    /* ===== 画面 ===== */
+    body {
+      font-family: 'Helvetica Neue', Arial, sans-serif;
+      background: #f0f0f0;
+      padding: 20px;
+      color: #222;
+    }
+
+    .card {
+      max-width: 720px;
+      margin: 0 auto 20px;
+      background: #fff;
+      border-radius: 10px;
+      padding: 20px;
+      box-shadow: 0 2px 12px rgba(0,0,0,.1);
+    }
+
+    h1 { font-size: 1.2rem; color: #2d6a4f; margin-bottom: 16px; }
+
+    .row { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 14px; align-items: flex-end; }
+
+    .field { display: flex; flex-direction: column; gap: 3px; font-size: .7rem; color: #666; }
+
+    .field input {
+      padding: 7px 10px;
+      border: 1px solid #ccc;
+      border-radius: 5px;
+      font-size: .88rem;
+      font-family: inherit;
+    }
+    .field input:focus { outline: none; border-color: #81c784; }
+
+    /* オートコンプリート */
+    .ac-wrap { position: relative; }
+
+    .ac-drop {
+      position: absolute;
+      top: 100%;
+      left: 0;
+      right: 0;
+      background: #fff;
+      border: 1px solid #aaa;
+      border-top: none;
+      border-radius: 0 0 6px 6px;
+      max-height: 220px;
+      overflow-y: auto;
+      z-index: 200;
+      box-shadow: 0 4px 10px rgba(0,0,0,.12);
+    }
+
+    .ac-item {
+      padding: 8px 10px;
+      cursor: pointer;
+      font-size: .82rem;
+      display: flex;
+      justify-content: space-between;
+      gap: 10px;
+    }
+    .ac-item.active,
+    .ac-item:hover { background: #e8f5e9; }
+    .ac-words { color: #888; font-size: .72rem; white-space: nowrap; }
+    .ac-none { padding: 8px 10px; font-size: .82rem; color: #aaa; }
+
+    .words-readonly {
+      background: #f6f6f6 !important;
+      color: #2d6a4f;
+      font-weight: bold;
+    }
+
+    .btn-add {
+      background: #2d6a4f;
+      color: #fff;
+      border: none;
+      border-radius: 6px;
+      padding: 8px 20px;
+      cursor: pointer;
+      font-size: .88rem;
+    }
+    .btn-add:hover { background: #1b5e20; }
+
+    /* 追加済みリスト */
+    #book-list { margin-bottom: 14px; }
+
+    .book-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 5px 8px;
+      border: 1px solid #e0e0e0;
+      border-radius: 5px;
+      margin-bottom: 4px;
+      font-size: .82rem;
+    }
+    .bi-num   { color: #bbb; width: 18px; text-align: right; flex-shrink: 0; }
+    .bi-date  { color: #555; width: 48px; flex-shrink: 0; }
+    .bi-title { flex: 1; }
+    .bi-words { color: #2d6a4f; font-weight: bold; width: 82px; text-align: right; flex-shrink: 0; }
+    .btn-del  { background: none; border: none; color: #e57373; cursor: pointer; font-size: 1rem; padding: 1px 5px; }
+
+    .actions { display: flex; gap: 10px; align-items: center; }
+
+    .btn-lookup {
+      background: #fff;
+      border: 1px solid #64b5f6;
+      color: #1565c0;
+      border-radius: 6px;
+      padding: 8px 16px;
+      font-size: .88rem;
+      text-decoration: none;
+    }
+    .btn-lookup:hover { background: #e3f2fd; }
+
+    .btn-print {
+      margin-left: auto;
+      background: #1565c0;
+      color: #fff;
+      border: none;
+      border-radius: 6px;
+      padding: 9px 22px;
+      cursor: pointer;
+      font-size: .88rem;
+    }
+    .btn-print:hover { background: #0d47a1; }
+
+    /* ===== インポートセクション ===== */
+    .import-section {
+      background: #f0f7ff;
+      border: 1px solid #90caf9;
+      border-radius: 8px;
+      padding: 14px 16px;
+      margin-bottom: 16px;
+    }
+
+    .import-section h3 {
+      font-size: .85rem;
+      color: #1565c0;
+      margin-bottom: 10px;
+    }
+
+    .import-steps {
+      font-size: .78rem;
+      color: #444;
+      margin-bottom: 12px;
+      line-height: 1.8;
+    }
+
+    .import-steps ol { padding-left: 18px; }
+
+    .bookmarklet-link {
+      display: inline-block;
+      background: #1565c0;
+      color: #fff !important;
+      border-radius: 6px;
+      padding: 5px 12px;
+      font-size: .8rem;
+      text-decoration: none;
+      cursor: grab;
+    }
+    .bookmarklet-link:hover { background: #0d47a1; }
+
+    .import-paste {
+      display: flex;
+      gap: 8px;
+      align-items: flex-start;
+      margin-top: 10px;
+    }
+
+    .import-paste textarea {
+      flex: 1;
+      height: 70px;
+      border: 1px solid #90caf9;
+      border-radius: 5px;
+      padding: 7px 9px;
+      font-size: .8rem;
+      font-family: inherit;
+      resize: vertical;
+    }
+    .import-paste textarea:focus { outline: none; border-color: #1565c0; }
+
+    .btn-import {
+      background: #1565c0;
+      color: #fff;
+      border: none;
+      border-radius: 6px;
+      padding: 8px 16px;
+      cursor: pointer;
+      font-size: .85rem;
+      white-space: nowrap;
+    }
+    .btn-import:hover { background: #0d47a1; }
+
+    .import-toggle {
+      background: none;
+      border: 1px solid #90caf9;
+      color: #1565c0;
+      border-radius: 6px;
+      padding: 7px 14px;
+      cursor: pointer;
+      font-size: .82rem;
+      margin-bottom: 14px;
+    }
+    .import-toggle:hover { background: #e3f2fd; }
+
+    .ocr-upload-row {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      flex-wrap: wrap;
+      margin-top: 10px;
+    }
+    .ocr-file-label {
+      display: inline-block;
+      background: #e3f2fd;
+      border: 1px solid #90caf9;
+      border-radius: 6px;
+      padding: 7px 14px;
+      font-size: .82rem;
+      color: #1565c0;
+      cursor: pointer;
+    }
+    .ocr-file-label:hover { background: #bbdefb; }
+    #screenshot-input { display: none; }
+    .ocr-filename {
+      font-size: .78rem;
+      color: #666;
+    }
+    .ocr-status {
+      margin-top: 10px;
+      font-size: .8rem;
+      color: #1565c0;
+      background: #e3f2fd;
+      padding: 8px 12px;
+      border-radius: 5px;
+      display: none;
+    }
+
+    /* ===== ログシート（プレビュー） ===== */
+    .preview-card {
+      max-width: 500px; /* B6縦の比率に合わせる */
+      margin: 0 auto;
+      background: #fff;
+      border-radius: 10px;
+      padding: 16px;
+      box-shadow: 0 2px 12px rgba(0,0,0,.1);
+    }
+    .preview-label { font-size: .7rem; color: #aaa; margin-bottom: 8px; }
+
+    .log-sheet {
+      border: 2px solid #222;
+      font-family: 'Helvetica Neue', Arial, sans-serif;
+      overflow-x: auto;
+    }
+
+    .sheet-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 10px;
+      padding: 4px 10px;
+      border-bottom: 1.5px solid #222;
+      font-size: .7rem;
+    }
+    .st-title  { font-weight: bold; font-size: .85rem; }
+    .st-name   { font-size: .8rem; font-weight: bold; }
+    .st-period { font-size: .72rem; }
+    .st-brand  { font-size: .62rem; color: #666; font-style: italic; }
+
+    /* ===== テーブル（1行1冊） ===== */
+    .log-table {
+      width: 100%;
+      border-collapse: collapse;
+      table-layout: fixed;
+    }
+
+    .log-table td, .log-table th {
+      border: 1px solid #888;
+      text-align: center;
+      vertical-align: middle;
+      padding: 2px 4px;
+      font-size: .72rem;
+      overflow: hidden;
+    }
+
+    .lbl {
+      background: #efefef;
+      font-weight: bold;
+      font-size: .65rem;
+      border-color: #555;
+    }
+
+    .col-no      { width: 5%; }
+    .col-date    { width: 8%; }
+    .col-title   { width: 29%; text-align: left; padding-left: 5px; font-size: .68rem; white-space: normal; line-height: 1.3; }
+    .col-wclabel { width: 5%; font-size: .48rem; background: #f0f0f0; writing-mode: horizontal-tb; }
+    .col-digit   { width: 4.8%; font-size: .8rem; font-weight: bold; }
+
+    .log-table tbody tr { height: 14px; }
+    .log-table tbody tr:nth-child(odd) { border-bottom: none; }
+    .log-table tbody tr:nth-child(even) td { border-top: none; }
+
+    /* ===== 印刷 ===== */
+    @media print {
+      body { background: #fff; padding: 0; margin: 0; }
+
+      .card,
+      .preview-label { display: none !important; }
+
+      .preview-card {
+        margin: 0; padding: 0;
+        box-shadow: none; border-radius: 0;
+        max-width: 100%;
+      }
+
+      @page {
+        size: 128mm 182mm; /* B6縦 (B5の半分) */
+        margin: 5mm 6mm;
+      }
+
+      .log-sheet { border-width: 1.5pt; overflow: visible; }
+
+      .log-table td, .log-table th { font-size: 6pt; border-color: #888; }
+      .lbl { font-size: 5pt; }
+      .col-title { font-size: 5.5pt; white-space: normal; line-height: 1.3; }
+      .col-wclabel { font-size: 4.5pt; }
+      .col-digit { font-size: 6.5pt; }
+      .log-table tbody tr { height: 19pt; }
+      .log-table tbody tr:nth-child(odd) { border-bottom: none; }
+      .log-table tbody tr:nth-child(even) td { border-top: none; }
+
+      .sheet-top { padding: 2pt 5pt; }
+      .st-title  { font-size: 8pt; }
+      .st-name   { font-size: 7.5pt; }
+      .st-period { font-size: 6pt; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- ===== 入力フォーム ===== -->
+<div class="card">
+  <h1>Highlights Reading Log</h1>
+
+  <!-- Highlightsから取り込む -->
+  <button class="import-toggle" onclick="toggleImport()">▼ スクショから自動で取り込む</button>
+
+  <div class="import-section" id="import-section" style="display:none">
+    <h3>📱 Highlightsアプリの履歴スクショを読み取る</h3>
+    <div class="import-steps">
+      <ol>
+        <li>HighlightsアプリでMy Historyを開く</li>
+        <li>スクリーンショットを撮る（複数枚まとめてOK）</li>
+        <li>下から画像を選んで「読み取る」を押す</li>
+        <li>Completedの本だけ自動で追加されます</li>
+      </ol>
+    </div>
+    <div class="ocr-upload-row">
+      <label class="ocr-file-label" for="screenshot-input">📂 画像を選ぶ</label>
+      <input type="file" id="screenshot-input" accept="image/*" multiple
+             onchange="updateFilename()">
+      <span class="ocr-filename" id="ocr-filename">未選択</span>
+      <button class="btn-import" onclick="processScreenshots()">読み取る</button>
+    </div>
+    <div class="ocr-status" id="ocr-status"></div>
+  </div>
+
+  <div class="row">
+    <div class="field">
+      名前
+      <input id="child-name" type="text" placeholder="子供の名前" style="width:150px" oninput="updateMeta()">
+    </div>
+    <div class="field">
+      開始日
+      <input id="start-date" type="text" placeholder="例: 4/1" style="width:78px" oninput="updateMeta()">
+    </div>
+    <div class="field">
+      終了日
+      <input id="end-date" type="text" placeholder="例: 4/30" style="width:78px" oninput="updateMeta()">
+    </div>
+  </div>
+
+  <div class="row">
+    <div class="field">
+      日付
+      <input id="in-date" type="text" placeholder="4/1" style="width:64px">
+    </div>
+    <div class="field" style="flex:1; max-width:420px">
+      本のタイトル（入力して候補を選ぶ）
+      <div class="ac-wrap">
+        <input id="in-title" type="text" placeholder="例: Dog Man" style="width:100%"
+               autocomplete="off"
+               oninput="onInput()"
+               onkeydown="onKey(event)"
+               onblur="setTimeout(closeDropdown,150)">
+        <div class="ac-drop" id="ac-drop" style="display:none"></div>
+      </div>
+    </div>
+    <div class="field">
+      語数
+      <input id="in-words" type="text" placeholder="自動入力" style="width:88px"
+             class="words-readonly" readonly>
+    </div>
+    <button class="btn-add" onclick="addBook()">追加</button>
+  </div>
+
+  <div id="book-list"></div>
+
+  <div class="actions">
+    <a class="btn-lookup"
+       href="https://sites.google.com/view/advhw/語数word-countハイライツライブラリー"
+       target="_blank" rel="noreferrer">語数サイトを開く</a>
+    <button class="btn-print" onclick="window.print()">印刷する</button>
+  </div>
+</div>
+
+<!-- ===== ログシート ===== -->
+<div class="preview-card">
+  <div class="preview-label">▼ 印刷プレビュー（B6縦サイズ）</div>
+  <div class="log-sheet">
+    <div class="sheet-top">
+      <span class="st-title">Highlights Reading Log</span>
+      <span class="st-name" id="hdr-name"></span>
+      <span class="st-period" id="hdr-period"></span>
+    </div>
+    <table class="log-table">
+      <thead>
+        <tr>
+          <th class="lbl col-no">No.</th>
+          <th class="lbl col-date">Date</th>
+          <th class="lbl col-title">Title</th>
+          <th class="lbl col-wclabel">この本</th>
+          <th class="lbl col-digit"></th><th class="lbl col-digit"></th><th class="lbl col-digit"></th><th class="lbl col-digit"></th><th class="lbl col-digit"></th>
+          <th class="lbl col-wclabel">累計</th>
+          <th class="lbl col-digit"></th><th class="lbl col-digit"></th><th class="lbl col-digit"></th><th class="lbl col-digit"></th><th class="lbl col-digit"></th>
+        </tr>
+      </thead>
+      <tbody id="log-body"></tbody>
+    </table>
+  </div>
+</div>
+
+<script>
+// ===== 本データベース（タイトル → 語数） =====
+const RAW_BOOKS = `100 Things  429
+2,000-Year-Old Homework  663
+911 Emergency!  203
+A "Great Accident"  155
+A Battle of Manners  792
+A Big Fan  42
+A Bigger Digger  216
+A Birthday Present for Brandon  415
+A Birthday Riddle  488
+A Birthday Surprise for Mama  313
+A Blessed Ride  782
+A Book for Baby 'Roo  53
+A Brick to Cuddle Up To  595
+A Busy Day  83
+A Cat Named Cow  147
+A Cat Nap  38
+A Cat's Tale  93
+A Celebration of Plenty  790
+A Chilling Thrill or was it s thirilling chill?  973
+A Chipmunk's Home  220
+A Coaching Legend  841
+A Coat for Miss Mouse  90
+A Cobra in the Garden  912
+A Colorful Picnic  215
+A Cool Idea  132
+A Cowboy Who Rode the Waves  604
+A Crab's Clever Costume  661
+A Crocodile Tale  674
+A Cup of Tea  463
+A Dangerous Bathroom Break  717
+A Danish Christmas Remembered  813
+A Day Off for Santos  825
+A Day at the Beach  127
+A Day at the Zoo  66
+A Day for Remembering  807
+A Day in Central Park  185
+A Day in the Life of a Zookeeper  258
+A Day on the Farm  608
+A Day to Remember Family  789
+A Different Kind of Perfect  482
+A Dragon Comes to School  156
+A Dragon in the Desert  710
+A Fall Day  10
+A Family Visit  159
+A Family Walk  174
+A Few New Neighbors  740
+A Final Touch of Color  464
+A Forest Full of Stars  471
+A Friend like Vole  422
+A Friend to Everyone  15931
+A Garden Grows  187
+A Garden Treat  67
+A Gathering of Stories: Myths and Legends of Many Cultures  26227
+A Gift for Hazel  508
+A Gift for Queen Ginger  259
+A Gift for You!  207
+A Good Day for Sharing  212
+A Good Friend  40
+A Good Home  118
+A Good Night's Sleep  117
+A Good Trade  279
+A Hard Lesson: Young Ben Franklin gets "corrected."  344
+A Head-Balancing Act  267
+A Hero for Plunkett Street  3498
+A Home for Hector  538
+A Home like a Globe  470
+A Horse in Room 2  113
+A House on the Move  500
+A Kind Lie  731
+A Kite-Flying Day  197
+A Kitten to Love  181
+A Language All Their Own  725
+A Legendary Athlete  674
+A Letter for Us!  166
+A Lifeline for Lions  748
+A Light for Lena  877
+A Little Bird Mystery  8785
+A Little Book of Thanks  36
+A Long Way for Chocolate  729
+A Long Winter's Nap  369
+A Lost Friend  127
+A Lucky Messenger  462
+A Magic Paintbrush: A Folktale From China  1458
+A May Basket for Grandma  168
+A Medal for Maria  1135
+A Moo-ving Experience  435
+A Mother's Day Surprise  235
+A Mother's Day Wish  168
+A Neighborhood Garden  58
+A New Family Tradition  1320
+A New Flamingo in Town  149
+A New Hat for Catty Jane  119
+A New Look at Hummingbirds  407
+A New Spin on a Space Horse: This cloud in outer space is turning to face us.  709
+A New View of Earth: Take a look at the planet we call home.  123
+A Once-in-a-Lifetime Experience  799
+A Pan-tastic Race  452
+A Park Ranger's Day  7
+A Peep Inside a Hatchery  382
+A Pet Wish  99
+A Picnic Surprise  190
+A Picnic for Mom  134
+A Picture for Grandma  153
+A Plate Full of Freedom  208
+A Prehistoric Mystery  769
+A President's Toys: Play the way President jimmy Carter did!  423
+A Princess Who Can Tune an Engine  426
+A Purr-fect Name  155
+A Raft of Ants  226
+A Rat for Dana  683
+A Real Home  3153
+A Road to Freedom: The Life and Work of Frederick Douglass  850
+A Robot's New Moves: Broken robot? No problem!  304
+A Rose for Elizabeth  798
+A Rough and Rugged Road  931
+A School Helper  159
+A Sculptor for America  612
+A Sea Turtle's Quiet Miracle  445
+A Secret Code  697
+A Sense of Indonesia  105
+A Silly Day  87
+A Simple Gift Inspired by a True Event: Inspired by a True Event  654
+A Slick Little Robot  822
+A Soldier in Disguise  890
+A Soldier's Secret  1250
+A Spaghetti Tale  422
+A Special Gift  269
+A Special Smile  835
+A Special Tree  95
+A Spring Coat for Sarah  1044
+A Spring Day  10
+A Step Toward Freedom  25325
+A Stoplight Song  62
+A Story of Liberty  276
+A Summer Day  10
+A Surprise Ride  148
+A Surprise for Annabelle  53
+A Surprise for Harriet  158
+A Surprise for Skunk  479
+A Tasty Mess  98
+A Tooth Tale  412
+A Touch of Genius: This artist sees with his hands.  986
+A Typical Boy?  2903
+A Valentine Surprise  182
+A Valentine by Very Special Delivery  225
+A Valentine for Nanima  488
+A Valentine for Scooter  156
+A Very Long Car Ride  43
+A View From the Dugout  481
+A Visit to the Dentist  191
+A Wedding-Cake Tale  723
+A Weird Little Crocodile  867
+A Whale of a Baby  748
+A Winter Day  10
+A Wonderful White Valentine  150
+A Year on the Savannah  3690
+Abby Takes Her Shot  840
+Abby's Surprise  86
+Abigail  10
+Accessibility in our Communities  6162
+Acres of Sheep to Help You Sleep  260
+Across the Estuary  892
+Across the Playground  490
+Act Your Age  459
+Adding Up the Clues  803
+Afraid of the Dark  671
+Ah-Choo Choo-Choo  171
+Ahmad's Market  3252
+Ah–Choo!  789
+Aislinn's Caper  772
+Albert's Emergency Earthquake Plan  767
+Aleck's Amazing Talking Dog: A dog who could say "mama and grandmama!"  417
+Alexander's Astounding World Feat  737
+Alien Valentine  231
+All Aboard  1435
+All Aboard!  41
+All About Broken Bones  110
+All About the Shore  89
+All About the Sun  48
+All Kinds of Baskets  28
+All Kinds of Birthdays  1319
+All Together Now, Fireflies!  811
+All in a Day's Work  769
+All of Spain Celebrates Three Kings' Day  775
+All the Way to the Duck Pond  804
+Allie's Sparrow  398
+Alligators Are Really Shy: Just ask Walt Rhodes. He catches them.  795
+Ally Is My Friend  89
+Alone and Together  156
+Alpha-Best  751
+Althea Gibson  1305
+Always Last  509
+Aly's Discovery  803
+Amazing Inventors: Some Inventions That Have Changed the Way We Live  14241
+Amber and the Giant Pumpkin  658
+Amelia Earhart  2617
+Amelia Pepperpot Can't Ah-Choo  438
+American Indian Radio Voices  5938
+American Legends: Fact Versus Fiction  11484
+American Mink  173
+American Olympic Gold Medal Teams  24477
+Amy's Origami  416
+An Alarm Clock That Crows!  797
+An Ancient Disk's Secret Message  835
+An Earful  509
+An Eye Out for Owls  453
+An Ocean on Europa?  919
+An Opossum Named Poppy: Our visitor turned out to be a garden helper.  683
+Ana Hides the Truth  256
+Ana's Bicycle  2118
+And Justice for All : A History of the Supreme Court  25383
+Andrea the Elk Spotter  783
+Andy's Amazing Not-a-Blanket  164
+Animal Babies  45
+Animal Families  7
+Animal Rescuers  1221
+Animal Senses  102
+Animal Talk  53
+Anita's Playhouse  80
+Annika's Fireworks  454
+Another Time  721
+Anton's Simple Gift  889
+Any More Earths Out There?: David Charbonneau searches for life among the stars.  757
+Apollo to the Moon  913
+Apple Strudel and Tutti-Frutti Ice Cream  799
+April Fools' Art  567
+April Showers  156
+Arbor Day  665
+Are You Listening?  7350
+Are You a Friend?  218
+Arm in Arm  227
+Art Class  939
+Art for the Sea  729
+Arthur Ashe: Against the Odds  789
+Arts Alive!  655
+As Cheerful as Cheerful Can Be  392
+As Good as Cinderella  480
+Ask Arizon: Mashed Potatoes and Friendship  740
+Ask Arizona Clumsy as a . . . Poppy  788
+Ask Arizona Little Monsters  784
+Ask Arizona Make Up Your Mind  782
+Ask Arizona: "Bracing for the Worst"  615
+Ask Arizona: "No, Rascal!"  754
+Ask Arizona: A Fish on the Baseball Field  737
+Ask Arizona: An Extreme Case of Jealousy  680
+Ask Arizona: Caught in the Middle  772
+Ask Arizona: Clues to the Perfect Gift  683
+Ask Arizona: Don't Judge a Pie by Its Crust  763
+Ask Arizona: Facing the Fish Monster  658
+Ask Arizona: Feeling Replaced  655
+Ask Arizona: Frightening Lightning (and Other Inky Pinkies)  739
+Ask Arizona: Good-Times Cookies  675
+Ask Arizona: Green (Belt) with Envy  806
+Ask Arizona: Help! All Alone at a Party  594
+Ask Arizona: How I Survived a Valentine Mishap  779
+Ask Arizona: How to Survive Extreme Embarrassment  677
+Ask Arizona: Make a Copy of Me for Halloween!  683
+Ask Arizona: Making Ice-Cream Memories  747
+Ask Arizona: Mixed-Up-Word Worries  745
+Ask Arizona: My Beyond-Busy Summer  734
+Ask Arizona: My Singing, Dancing, Silly-Hat-Wearing Mom  678
+Ask Arizona: Needed: More Hours in a Day!  751
+Ask Arizona: Operation Pepperoni Pizza  735
+Ask Arizona: Owning Up to a Mess-Up  651
+Ask Arizona: Presentation Panic? No Problem!  747
+Ask Arizona: Prince, the Flying Dog  784
+Ask Arizona: Private Property--Keep Out!  698
+Ask Arizona: Reaching Out to the New Kid  630
+Ask Arizona: Sneaky Cats and Teeny-Tiny Giraffes  717
+Ask Arizona: Stuck in a TV Time Warp  699
+Ask Arizona: Teamwork Trouble  696
+Ask Arizona: The Everything-Goes-Wrong Camping Trip  694
+Ask Arizona: The Feel-Better Book  712
+Ask Arizona: The Idea-Breathing Dragon  791
+Ask Arizona: The Perfectly Perfect Picnic  634
+Ask Arizona: The Worst Best Inside Day  631
+Ask Arizona: Too Much of a Good Thing  714
+Ask Arizona: Unhappy Camper  712
+Ask Arizona: What I Learned from a Mama Bird  705
+Ask Arizona: When Secrets Get Slippery  787
+Ask Arizona: When You're a Worrywart  730
+Ask Arizona: When You're the "Lucky One"  672
+Ask Arizona: Wishing for a "Freeze Button"  695
+Ask Arizona™: A Cat Named Charlie  733
+Ask Arizona™: A Not-So-Secret Valentine Surprise  756
+Ask Arizona™: A Serious Case of Stress-itus  764
+Ask Arizona™: A Sweet–and Spicy!–Welcome  779
+Ask Arizona™: Agree to Disagree  660
+Ask Arizona™: All Washed Up  760
+Ask Arizona™: Alligator Eyebrows for Mother's Day?  703
+Ask Arizona™: Also Known as Ms. Yellington (and Mama Rabbit)  744
+Ask Arizona™: Bedbug Battles  781
+Ask Arizona™: Bossy McBossyboss  790
+Ask Arizona™: Butterfly Attack  747
+Ask Arizona™: Calming Camp Jitters with Pickles and Sleepy Bear  680
+Ask Arizona™: Caution: Catty Friends  704
+Ask Arizona™: Changing the World with a Glow-in-the-Dark Bandage  755
+Ask Arizona™: Clowning Around  698
+Ask Arizona™: Cow and the Labradoodle Intruder  783
+Ask Arizona™: Desperately Seeking My Backpack  832
+Ask Arizona™: Did You Just Say What I Heard You Say?  723
+Ask Arizona™: Feeling the Pressure  733
+Ask Arizona™: Fiasco on the Farm  746
+Ask Arizona™: Fine, Feathered (Furless) Friends  773
+Ask Arizona™: Friends Forever  784
+Ask Arizona™: Hamster Houdini Lost in a Black Hole  732
+Ask Arizona™: How a Superhero Machine Changed My Life  777
+Ask Arizona™: How to Become Un-bored  711
+Ask Arizona™: How to Give a Priceless Present  694
+Ask Arizona™: Lessons from a Dancing Panda  784
+Ask Arizona™: Lucky Hat  792
+Ask Arizona™: Meatballs, Hairdos, and Other New Year's Fun  718
+Ask Arizona™: Mouse in Wonderland  762
+Ask Arizona™: Musical Mismatches  796
+Ask Arizona™: My Perfectly Imperfect Sleepover  822
+Ask Arizona™: My Super-Sensitive Friend  791
+Ask Arizona™: One-Way-Ticket Time  794
+Ask Arizona™: Riding Out the Fair  757
+Ask Arizona™: Seeing Double  629
+Ask Arizona™: So Hard to Say Good-Bye  727
+Ask Arizona™: So Yesterday— and Fine with It!  691
+Ask Arizona™: Sock Monster Saves the Day  773
+Ask Arizona™: Squirrel Trouble  783
+Ask Arizona™: Starla Rae Takes Over  795
+Ask Arizona™: Steady That Float!  784
+Ask Arizona™: Stopping to See the Magic  692
+Ask Arizona™: Summertime Blues  792
+Ask Arizona™: Super Bowl Surprise  786
+Ask Arizona™: Swimsuit Shyness  836
+Ask Arizona™: Take Me Out to Gold Country  816
+Ask Arizona™: Take Me to a Tropical Island!  746
+Ask Arizona™: Tent Trouble Times Two  766
+Ask Arizona™: The Adventures of Grumpy Girl and Furry-Cat Flash  700
+Ask Arizona™: The Biggest April Fool  779
+Ask Arizona™: The Copycat Crisis  753
+Ask Arizona™: The Fuss over New Babies  730
+Ask Arizona™: The Imagination Game  797
+Ask Arizona™: The King of Svendoolia?  780
+Ask Arizona™: The Mystery of the Missing Tooth  767
+Ask Arizona™: The Soggy-Turkey Contest  748
+Ask Arizona™: The Team from Planet Weirdville  811
+Ask Arizona™: The Truth About Lies  800
+Ask Arizona™: To Do: Let Go of the List  691
+Ask Arizona™: Twisted-Tiger Trouble  724
+Ask Arizona™: When Life Gives You Orange Juice…  790
+Ask Arizona™: When Small Change Is a Big Deal  687
+Ask Arizona™: When You Can't Be in Two Places at Once  777
+Ask Arizona™: Yikes There's a Fish in My Lap!  771
+Astronaut Answers Kids' Questions from Space  635
+Astronauts and Space Travel  306
+At Bat  51
+At a Street Fair  32
+At the Beach  67
+At the Fair  147
+At the Store  93
+At the Zoo  26
+Ataka: A Young Desert Girl  761
+Athena and the Dandelions  661
+Audrey Takes Her Time  470
+Autism  6867
+Autumn Zigzags  92
+Babies Everywhere!  33
+Baboons Mean Mischief  729
+Baby  21
+Baby Band  44
+Baby Bear's Bed  158
+Baby Bunny Sings Along  40
+Baby Bunny and the Storm  34
+Baby Bunny in Autumn  23
+Baby Bunny in the Snow  26
+Baby Bunny's Lullabies  33
+Baby Bunny's Train  33
+Baby Play  34
+Baby Song  2183
+Baby's First Word  181
+Baby's Mealtime  27
+Back From the Edge: Recovered Animal Species  24909
+Back in Time for Dessert  749
+Back-to-Back Classes  242
+Backyard Bunnies  313
+Backyard Picnic  136
+Bad Pudding  710
+Baking Banana Bread  171
+Balancing Rocks  601
+Balancing the Books  499
+Balto the Sled Dog  290
+Bang! Clang! Big Dump Truck!  51
+Barack Obama: The First African American President  234
+Barnyard Breakfast  20
+Baseball Dreams  2137
+Baseball Morning  59
+Baseball's Stars  940
+Bass  238
+Bath Time for Baby Bunny  47
+Bath Time!  46
+Bats Under the Bridge  134
+Be a Weather Reporter  47
+Bea and Lop  7
+Beach Baby  24
+Beach Blues  1315
+Beach Day  25
+Bear Hits a Home Run  279
+Bear Learns to Read  71
+Bear and Max  505
+Bear's Birthday  146
+Bear's Plum Tree  147
+Bearded Dragon  49
+Beautiful Bowers  221
+Bebo and Juan Visit the Dentist  149
+Becki and Bonsa: Friends for Life  688
+Beds  39
+Bedtime in the Barnyard  99
+Bee? Wasp? Flower Fly!  288
+Before the Store  33
+Behind the Scenes at a Movie Theater  818
+Being Inspired by Teachers  492
+Bella Gets Dressed  143
+Bella's First Day  142
+Bella's Pizza Pie  91
+Belly Flops and Gutter Balls  383
+Ben Franklin: Fit for Life  720
+Ben's Part  69
+Bending Sticks into Sculptures  544
+Benjamin Banneker and His Amazing Clock  642
+Benjamin and the Paper Trail  767
+Benjy's Great Name Hunt  533
+Benny and the Missing Buzzer  310
+Bert and Beth Go Far, Far Away  91
+Bert and Beth Go Flying  141
+Bert and Beth Go Hiking  75
+Bert and Beth Look at the Stars  99
+Bert and Beth Plan Grandpa's Party  74
+Bert and Beth Play Basketball  83
+Bert and Beth Travel Far, Far Away  73
+Bert and Beth and the Kite  82
+Bert and Beth's Busy Day  103
+Bert and Mert and the Dancing Shadows  595
+Bert and Mert and the Ghost Mystery  540
+Bert and Mert and the Missing Pie  614
+Bert and Mert at the Zoo  732
+Bert, Beth, and Grandpa Go Skating  43
+Bert, Beth, and Their Shadows  84
+Bert, Beth, and a Lot of Splashing  112
+Bert, Beth, and the Bedtime Story  61
+Bert, Beth, and the Muffin Party  72
+Bert, Beth, and the Open Sea  109
+Bert, Beth, and the Rocking Chair  73
+Bert, Beth, and the Sandcastle  115
+Bert, Beth, and the Snowflakes  80
+Bert, Beth, and the Turtle  101
+Bessie Coleman  1637
+Best Camping Spot Ever  435
+Best Friends  34
+Beverly Beats the Deep  136
+Beyond Earth  13917
+Biddledee Bear's Dinner  70
+Biff and Bingo  676
+Big Brother  137
+Big Bugs  469
+Big Night at the Vernal Pool  690
+Big Red Slide  45
+Big-City Frogs  390
+Bigger than Life: America's Tall Tales  25865
+Bill's Trick  149
+Billy and the Bully  608
+Bindi!  517
+Bird's Nest Safari  491
+Birds That Flock to Fires: Some wildlife thrives in burned-out forests.  735
+Birds as Pets  110
+Black Blizzard  1013
+Blast Off! Mae Jemison Goes Into Space  1007
+Blaze Across the Sky: The Story of Tecumseh  3311
+Blending Worlds  6188
+Blind Ambition  640
+Blizzard's Coming  772
+Blow Out the Sun  122
+Blue Boat, Green Boat  775
+Blue Canoe  79
+Bo's Gloomy Day  163
+Boats Afloat  120
+Boats and Planes Everywhere  185
+Body Art  360
+Born to Run  820
+Bouncing Back  533
+Bouncy  16
+Bowhead Whales with Talent!: Scientists discovered an Arctic whale's complex songs.  663
+Boys vs. Baboons  668
+Brandon's Big Idea  1100
+Brandon's Experiment in Space: His work flew on the space shuttle.  749
+Brave Jamal  249
+Brave Teddy  67
+Break That Press  781
+Breakfast Around the World  812
+Bridges!: Around the world, bridges help people travel from one place to another.  83
+Bright Light  57
+Bringing Up Baby Foxes: Raising a family is tricky in the Arctic!  740
+Bubble Fun  112
+Bubble, Bubble, Spittlebug  297
+Bucky Builds a Bookcase  176
+Bug-zilla on the Hunt: This caterpillar eats other insects.  255
+Building Beaver Dams: Could we bring wildlife back to this creek?  721
+Building Holy Huts: A Jewish tradition becomes the idea for a contest.  333
+Building Log Houses  211
+Building Space Robots  576
+Building a Dinosaur Double: Camptosaurus was cracking up, but it was no joke!  695
+Building a Playground  64
+Building a School  534
+Building a Tree-Trunk Road  434
+Bungle Bear's Burnt Toast  459
+Bunk-Bed Blues  524
+Bunny Hop  34
+Buried Treasure  169
+Bus Ride  22
+Busy Bunnies  30
+Busy Day  18
+Busy Town  41
+Butterflies in Disguise  192
+Buzz and Ted Are Friends  35
+By Land or Sea  3052
+Cait Went Fishing  159
+Calling All Brollies  513
+Camels Join the Army!  728
+Camping Out with Honey  249
+Camping Surprise  71
+Camping at Grandma's  104
+Camping at Mount Sofa  106
+Can Dolphins Do Math?: Yes, they can... more or less.  661
+Can We Agree?  170
+Can We Go in the Van?  49
+Can You Find Me?  127
+Can't Anybody Hear Me?  601
+Can't Sleep, Mama  73
+Canning Day  835
+Capturing Unicorns  768
+Car Wash  31
+Career Day at Pixie Academy  731
+Careful!  4
+Caring  139
+Caring for Your Dog  43
+Carl's Day  310
+Carmela Plants a Tree  123
+Cartwheels and Butterflies  451
+Cat Clues  786
+Cat, Dog, Dog  116
+Catch That Ball!  156
+Catch of the Day  804
+Catching Andromeda's Light  800
+Catching Cougar Kittens  803
+Catty Jane Builds a Boat  140
+Catty Jane Goes for a Walk  188
+Catty Jane and Her Doll  73
+Catty Jane's New Bike  184
+Celebrate 100 Days  177
+Celebrate Greek Easter  266
+Celebrate Valentine's Day  178
+Celebrating Earth Day  138
+Celebrating Easter in the Dark  648
+Celebrating Raksha Bandham  511
+Champion of Giraffes: Zookeeper Amy Phelps enriches the lives of giraffes.  616
+Champions of Hibernation: Fat dormice are energy supersavers.  454
+Chandra  808
+Changing Times  391
+Charley's Chance  207
+Charlie Wants to Help  149
+Charlie Wants to Play  180
+Charm the Fancy Horse  647
+Chases' All-In-One Place  21223
+Chasing Chickens  595
+Chatty Birds  416
+Cheche the Rhinoceros  785
+Check Out The Checkup Toolkit  515
+Check Out the Moon: Here are some hard facts about our rocky neighbor.  196
+Cheeper  496
+Cheer Up, Catty Jane!  139
+Cheer Up, Scarecrow!  68
+Cheetah and Dog: Best Friends Forever  648
+Chester Greenwood's Ears  775
+Chewy Lewis, Food Detective  675
+Chica-Chick Can Help  155
+Chica-Chick Loves Salads  190
+Chica-Chick Makes a Pinata  171
+Chickcharnies and Guava Duff: A Bahamian Tale  798
+Choices to Make  1034
+Choosing Sides: Are animals "right-handed or left-handed?"  619
+Christmas Shelter  795
+Christmas in Polonia  712
+Chugga-Chug  128
+Cikala and the Winter Monster  795
+Cinderella: A Folktale From France  657
+Circle Time  127
+Citizen Carmen  947
+City Folks, Country Folks  854
+Claire the Big Kid  132
+Clara's Secret  287
+Clay Today!  50
+Clean-up Fun  171
+Cleaning Up!  82
+Clearing Trails in the Wilderness  628
+Cleopatra Finds Her Voice: How a future queen connected with her people  405
+Clever Hodja, Foolish Hodja: A Turkish Tale  731
+Climbing into the Past  560
+Cloaked in Starlight: Bobtail squids are masters of disguise.  338
+Clothes Around the World  468
+Clouds  57
+Clues in the Skulls: What do they eat?  245
+Coach Mom  1016
+Coach, Where Are You?  169
+Cobra Kite  951
+Cock-a-Doodle  370
+Cock-a-Doodle Whisper  274
+Cold Soup for a Hot Day  145
+Cold or Hot?  10
+Color Crazy  464
+Columbus, the Traveling Bear  730
+Come Join Us  205
+Come Visit  80
+Come to the Table  149
+Comic-Strip Cal  887
+Community Helpers  17
+Community Service  138
+Conflict Resolution: Take a Cue From History  10409
+Conquering the Corn Maze  705
+Cooking for Presidents  702
+Cooperation  145
+Copernicus, King of Craters  460
+Coping With Challenges  19388
+Copycats  150
+Cornelia and the Falling Sky  170
+Cornelia and the Nut: A Retelling of "The Princess and the Pea"  179
+Counting Baby Ducks  65
+Counting Bugs  63
+Counting Giraffes  707
+Counting Sheep  28
+Counting Stars  126
+Cow Food  162
+Cow Makes a Mess!  146
+Cow Needs Help  166
+Cracking Code Purple  689
+Cranky Me  507
+Crawdads and Dominoes  767
+Creating Colorful Collectibles  680
+Creating a Symphony of Steel  522
+Crimson Harvest: A Visit to a Cranberry Farm  735
+Crossing the Bay  160
+Crows Never Forget a Face  727
+Crows in the City  610
+Crystal's Crystals  468
+Cupcake Conundrum  301
+Curley's Uniforms  532
+Cutting Cowboy's Hair: Alpacas need a haircut every spring.  139
+Dad and Me  69
+Daddy's Coming Home!  174
+Daddy's Home  38
+Daddy's Truck  17
+Damon and Darren  3198
+Dance of a Thousand Years  694
+Dance with Me!  91
+Dance!  285
+Dancing Girl  142
+Dancing Toward Dreams  743
+Dancing for Fun  165
+Dancing in America  25066
+Danger on Thin Ice  797
+Danger! Carnivorous Plants!  159
+Danger! Rescue on Thin Ice  577
+Danny's New Umbrella  855
+Darcie Dines Out  891
+Daring to Know: The Life of Sor Juana  8154
+Davy Duck's Grumpy Day  131
+Davy Gravy Starts School  117
+Day and Night  8
+Day and Night in the Rain Forest  2573
+Dean Was a Slob  197
+Dear Alycia  751
+Dear Mrs. Roosevelt  1385
+Dear as Salt: An Itraa  799
+Dedicated to the Goal  751
+Deepa's Navratri Dress  505
+Delmar and His Disappearing Dog  776
+Desert Tortoise  182
+Detective Cow  122
+Dexter Robin Learns to Fly  421
+Did You Hear About Rosa  12014
+Differences  214
+Digger and Dander  460
+Dino Breakfast  44
+Dinosaur  57
+Dinosaur May Day  184
+Dipped in Chocolate  556
+Disappearing Acts  701
+Disc-Dog Champ: This border collie is an amazing athlette.  522
+Discovering Tyrannosaurus rex  456
+Discovering a New Galaxy: The Milky Way is tearing it apart.  832
+Dive into Reading  156
+Do You Have Good Manners?  73
+Do You See Chameleon?  53
+Do You Speak Prairie Dog?  817
+Do You Want to Play?  172
+Dog Wash  138
+Dogs Can Make a Difference  15122
+Dogs That Guard Sheep  85
+Dogs and Cats as Pets  113
+Dogs and People  816
+Dogs at Work  408
+Doing the Wash  155
+Doll Was Ill  59
+Dolls and Dance  686
+Dolores Huerta: It Can Be Done  3146
+Don't Be Afraid  208
+Don't Dry Up, Frogs!: They're the best yet at staying wet.  705
+Don't Lick the Statues!  560
+Don't Worry  244
+Dona Rosa Gets Cold Feet  175
+Dot and Dan  7
+Double $ Trouble  791
+Down We Go!  156
+Down a Wombat Hole  489
+Doña Rosa Goes Shopping  145
+Dr. Octopus  374
+Dragon Tears Needed!  780
+Dragons Race on Water  760
+Dragons on the River  117
+Dreams and Musical Feet  669
+Drilling in the Ocean Floor  835
+Driving on Mars: A roving robot named Curiosity explores the Red Planet.  198
+Dropping the Time Ball  832
+Drummer Boys  1124
+Drumming with Grandpa  488
+Duck Pins  374
+Duck Town  68
+Duck and Goose  108
+Ducktective Max and the Missing Farm Animals  761
+EARTH DAY HEROES  684
+Early to Bed  482
+Earth Day  824
+Earth Day Birthday  443
+Easter Sunrise  100
+Easter with Baba Olena  768
+Easter--The Greek Way  696
+Eating in the Woods  146
+Education for All America's Schools  15586
+Edward the Frog  900
+Egg Drop Soup  763
+Eggs  28
+Eight Red Apples  165
+Eleanor Roosevelt: Proud and Tall  769
+Election Firsts  10938
+Electricity Made Simple  155
+Elephant Grandmothers  841
+Elephant Talk  808
+Elephant Work  89
+Elephant's Trunk An All-in-One Tool  251
+Eli Cools Off  130
+Ellen Ochoa: Setting Records in Space  1397
+Elly the Elephant  137
+Emily Carr  1341
+Emma and the Pie Grabber  749
+Emma's Echo  312
+Emma's Picture  492
+Endangered Sea Life  3308
+Enemy Invaders  10716
+Enjoy the Show!  178
+Estrella Starring  809
+Eugenie Clark, The Shark Lady  743
+Eva's Eggflip  801
+Even If He's Green  811
+Evening Star, Morning Star  311
+Everella's Wand  900
+Every Carving Tells a Story  710
+Every Day's a Holiday  445
+Everyone Can Vote  249
+Everyone Works!  182
+Everything He Needs  479
+Exercise!  586
+Exploding Stars Turn Red: Two stars merge into one and explode in a red flash.  806
+Explorers of the Land  16081
+Exploring Art at the Museum  179
+Exploring Machu Picchu, Lost City of the Incas  834
+Eyes in the Sky  636
+Eyes of the Dragon: An Imaginary Tale  882
+Face to Face with Barn Owls  364
+Fair and Square  767
+Fairies in Town  376
+Fairness  131
+Fairy-Tale Housecleaners  438
+Fall Colors  110
+Fall Fun  184
+Family  7
+Family History Isn't Ancient History  18247
+Family Night  44
+Family Picnic  102
+Family on Parade  542
+Fantastic Fun Festival  726
+Farm in the City  95
+Farming in Space  411
+Fast Elephants  746
+Fast Fred  77
+Fast as a Blast  126
+Father's Day Airlines  148
+Feeding Fuzzy Tail  141
+Feeding the Birds  145
+Feelings  7
+Feet!  68
+Felix's New Boots  151
+Feliz Navidad  118
+Female Aviators from Harriet Quimby to Eileen Collins  13200
+Fiddle Fanatic  798
+Fill It Up!  145
+Finding Cloud  639
+Finding Dinner at the Farmers' Market  196
+Finding Grammy's Present  148
+Finding Lottie's Socks  130
+Finding Prince Deming  749
+Finding Room for Teddy  167
+Finding a Home  95
+Firefighters at the Station  134
+First Day With Us  28
+First Day of School  172
+First Haircut  44
+First Lady of Wildflowers: She helps keep America beautiful.  898
+First Step  437
+First Steps  24
+Fish Fry and Apple Pie  493
+Fish!  26
+Fish's Lucky Day  129
+Fishing With Grandpa  59
+Fishing for a Living: For Jim Moynagh, a rewarding day is spent thinking like a bass.  575
+Five Foolish Brothers: A Folktale from England  479
+Five Frosty Friends  68
+Five Little Ducks  21
+Five Little Penguins  144
+Five Little Piggies and One Lemonade Stand  136
+Five Little Puppies  74
+Flash! Splash! Training a Deaf Polar Bear  363
+Flashback: Climb Your Mountain  477
+Flashback: What I Learned from Yogi  477
+Flashbacks: A Reading Lesson  465
+Flashbacks: Breaking Down the Walls  345
+Flashbacks: Eager to Speak Out  471
+Flashbacks: How to Beat the Unbeatable  372
+Flashbacks: Let Curiosity Lead You  370
+Flashbacks: Looking Up  278
+Flashbacks: Opening a Window  455
+Flashbacks: Persistence  498
+Flashbacks: The Dangers of Bird Watching  522
+Flashbacks: Thinking Like Edison  422
+Flies for Dinner  131
+Floats for the Fourth  684
+Flopping Frogs!: Have scientists discovered why the tailed frog belly-flops?  680
+Floppy Learns a Trick  173
+Flora's Yard Sale  384
+Flower Power  3723
+Flutter Balls  801
+Fly on the Windshield  473
+Flying Away  102
+Flying Copycats  420
+Flying Friends  158
+Flying Galaxies  675
+Flying High  31
+Flying Jellyfish  141
+Flying Solo  655
+Flying in the Wind  154
+Flying with a Tiger  777
+Flying with the Cranes  230
+Focusing on Success  631
+Folklore All Around Us  839
+Folktales From Around the World  15562
+Follow That Horse  473
+Follow That Meow  169
+Food from the Farm  35
+For the Love of the Game  890
+Forewarned: Can We Predict Earthquakes and Volcanic Eruptions?  24112
+Forgetful Red  706
+Four Fun Chicks  47
+Fourth and Goal  707
+Fourth of July  17
+Fox Makes Lunch  484
+Fox Spends the Night  512
+Fox Strings the Beans  449
+Fox and His Halloween Tail  446
+Fox and the Chickadees  392
+Foxes in the City: These wild animals thrive near people.  704
+Freddy's Farm  407
+Freddy's Superpower  151
+Freedom for All: The Life Story of Sojourner Truth  1242
+Freeze Tag  161
+Friends  37
+Friends Can Share  46
+Friends Face Fears at the Fair  693
+Friendship Day  1122
+Friendship Trouble  3632
+Frog Race  177
+Frogs in the Closet: It's like a Noah's Ark for frogs  780
+From Eggs to Wings  137
+From Pit to Pond  312
+From Ridicule to Respect: Scientists and Theories That Overcame Doubt  21564
+From Scribbles to Spacious Skies  852
+From Silkworm to Cloth  579
+From Two Different Universes  791
+From a Tree House  662
+Frozen Bubbles: They're full of surprises.  318
+Fun Park  1092
+Fun With Baby  21
+Fun at the Picnic  179
+Funderstorm  748
+Fuzz! Sock! What a Mess!  42
+Gallaudet University: Where Deaf People Can Be Heard  9864
+Game Day at School  147
+Game On! "Tri Harder!: Bryan tests the waters in his first triathlon."  1041
+Game On! 7-10 Split: Devin faces the toughest shot in bowling.  960
+Game On! Benched  983
+Game On! Bright Lights  935
+Game On! Clean Slate  944
+Game On! Dunked!  981
+Game On! Four Quick Steps: The game is tied. Bryan needs to score.  976
+Game On! Hoops History  1004
+Game On! Pace Yourself: Does "slow and steady win the race?"  1047
+Game On! Shutout: Can anyone score on that goalie?  1117
+Game On! Summer Heat  996
+Game On! Up and Over: Can Tara make three foul shots in a row?  748
+Game On! Wild Pitch: It isn't often that you see a mistake win a game.  972
+Game On: Playing to Win: A spot in the indoor soccer playoffs is on the line.  985
+Gandhi  1040
+Garden Stakeout  430
+Gardening  21
+Gargling Gargoyles: Roosters crow. Cats meow. Dogs bark. And gargoyles gargle!  567
+Garrett Morgan  585
+Gerbils Morphing  772
+Get Moving!  35
+Get to Know a Million  412
+Get-Well Soup  175
+Getting Back in the Game  225
+Getting Betty Ready  398
+Getting Down and Dirty: Community Gardens  8990
+Getting Even  537
+Getting Ready  124
+Getting Ready for the Family Feast  312
+Getting the Job Done  517
+Geysers Go Off!  82
+Giants of the Sea  35
+Gifts for All  127
+Girls Play Sports  3027
+Girls and Boys  9
+Gisela's Dream Dance  586
+Give to Our Center  8
+Giving Thanks  59
+Giving Thanks for Hanukkah  424
+Glaciers  183
+Global Youth Service Day  1061
+Go on a Leaf Hunt  67
+Go, Dan! Go, Mag!  18
+Go, Go, Go!  24
+Go, Train, Go!  118
+Goal!  7
+Gobble! Gobble!: The wild Turkey Makes a Comeback  889
+Gobbling Grounders: How to field a ground ball.  198
+Going Clamming  474
+Going Downtown  96
+Going Green  674
+Going Home  79
+Going for the Big One  817
+Going for the Goal  871
+Going in Circles Around Saturn  671
+Going the Distance  828
+Going to the Fair  178
+Gone Fishing?  208
+Good Friends  1119
+Good Morning  85
+Good Morning, Farm  81
+Good Night  51
+Good Night!  172
+Good Night, Pumpkin  461
+Good Night, Red Barn  78
+Good Ways to Push  162
+Goodbye, Angel Island  262
+Goose Says Good-Bye  469
+Goosey-Gog and Ducketty-Duck  78
+Grabby Big Tom Bumble  477
+Grace Murray Hopper  667
+Grace Says Hello  162
+Gramma's Favorite  882
+Granddaddy  896
+Grandma's Purse  442
+Grandma's Visit  63
+Grandmother's Clock  944
+Granny Smith's Disappearing Apples  767
+Granny's Best Valentine  159
+Great Blazes! Who Started the Fire?  515
+Green Thumb  884
+Green, Yellow, and Red  159
+Greenfoot Gus  74
+Grocery Store Helpers  163
+Growing Up in Pictures  178
+Grumps  195
+Gu Dong Is Coming!: Based on a traditional Chinese folktale  492
+Guacamole Joe  476
+Gudrun's Volcano Night  936
+Guess My Riddle  228
+Guess Where I'm Hiding  29
+Guion Bluford: Space Explorer  1605
+Gulp!  25
+Half Past  740
+Half for You, Half for Me  177
+Halfway Home  11443
+Halloween Fun  155
+Hand in Hand: Supporting Children With Illness  3646
+Hand-Me-Down Crayons  524
+Hands Across Borders  5441
+Hang On Tight!  162
+Hanging by a Thread: Caterpillars have a trick to get out of danger.  449
+Happy Birthday to . . . ?  448
+Happy Birthday!  91
+Happy Birthday, Mrs. Mole  205
+Happy Birthday—April Fool!  510
+Harbor Seals  189
+Harriet's Mittens  118
+Harry Truman, Lost and Found  794
+Harvest Soup  114
+Having a Ball  429
+He Even Kissed a Pig: Cullinan would do anything to cure diabetes.  805
+He Made Trees Live Again  970
+Hearing Sounds Through the Ground: An earth-shaking discovery about elephants.  340
+Heart Surprises  454
+Heartbeat of Mother Earth  648
+Hearts for Valentine's Day  166
+Heat and Eat  178
+Heat-Wave Snake  890
+Hector, King of the Barnyard  532
+Hello, Flopsy and Mopsy  170
+Hello, Hat  30
+Hello, Misty!  152
+Hello, Spot!  46
+Hello, Spring!  76
+Hello, Winter!  81
+Hello, World!  18
+Help Is OK  167
+Help for the Golden Lion Tamarins  3277
+Help on the Farm  189
+Helpers in the Community  157
+Helpful Insects  254
+Helping Hands  93
+Helping Others: The Story of Fanny Jackson Coppin  876
+Helping Out  727
+Helping Out in Kindergarten  149
+Helping Tiny Tortoises Feel at Home: Zookeepers help these rare animals survive.  521
+Henry's Books  1273
+Here Comes Grumpy  202
+Here Comes a Storm  55
+Here I Am  42
+Hermit Crabs and a Banana Moon  455
+Hero of the Tarsiers  746
+Heroes of Hurricane Katrina  5874
+Hey, Rookie!  556
+Hi, Ho, Teddy-O  66
+Hiccup!  182
+Hide-and-Seek  169
+Hide-and-Seek School  614
+Hiding in the Snow  154
+High Arctic Journey  805
+High in the Mountains of Ecuador  715
+High-Flying Simone Biles: This gymnast lets her power and personality shine.  551
+Hippity-Zippity  63
+Holiday Cookies  84
+Holidays  36
+Holly's Lantern  267
+Home Free  1269
+Home Is Where We Are  187
+Home Sweet Home  257
+Honk, Honk!  78
+Hooray for Us!  987
+Hop In!  53
+Hop, Hop, Hop  23
+Hop, Hop, Hopscotch!  178
+Hopes Fulfilled: The Irish Immigrants in Boston  2071
+Horse and Fly  331
+Horsing Around  478
+Hot Spot!  304
+Hot Spots Under the Sea: Strange things happen under the ocean.  1030
+Houses  34
+How Banks Work  796
+How Bats "See at Night"  477
+How Bats Slurp at Night  794
+How Bees Make Honey  151
+How Brainy Are Monkeys?: They can count well enough to avoid a fight.  757
+How Can We Share?  22
+How Cars Have Changed!  192
+How Do Astronauts Use Jet Packs in Space? and Other Questions About Space  564
+How Do Stars Show and Not Show? and Other Questions About Space  390
+How Do We Measure It?  77
+How Do We Rest?  50
+How Do You Know When the Carrots Are Ready?  473
+How Do You Measure Up?  140
+How Does Earth Revolve around the Sun? and Other Questions About Earth  320
+How Does a Star Form? and Other Questions About Space  427
+How Does a Star Twinkle? and Other Questions About Space  271
+How Dog Came to Live With People: A Folktale From Africa  474
+How Dolphins Go Fishing: What a wild dolphin has to do to catch a meal!  750
+How Horses Sleep  138
+How Humpbacks Go Fishing  751
+How I Became a Backyard Biologist(and how you can, too!)  365
+How I Feel  35
+How Lobsters Make "Music"  410
+How Low Can You Go?  484
+How Many Now?  116
+How Many?  10
+How Penguins Pair Up: Who's a good mate? They can tell by the smell.  747
+How Six Sons Saved Anansi  475
+How Volcanoes Blow Off Steam  184
+How We Treat Others  14
+How Whales Wing It  720
+How Would You Feel?  110
+How the Brain Fools the Eye  862
+How the Weaverbird Built His Nest  591
+How the Wright Brothers Took Off  609
+How to Celebrate a Birthday  184
+How to Cure a Cold  130
+How to Eat Scorpions: Meerkat pups go to survival school.  741
+How to Eat a Rainbow!  63
+How to Find a Tortoise Nest(in the desert)  790
+How to Grow Your Own Money Tree  659
+How to Tie a Shoe  270
+How to Use an Umbrella  401
+How to Walk Your Dinosaur  119
+How to Whistle-LOUD!  287
+Hubble Opens Our Eyes  331
+Hugging the Sharks: Some scientists get up close and personal with them.  728
+Huggy Baby Bunny  60
+Hula Dancing 101  410
+Hull-House  5457
+Hummingbird Park  862
+Hummingbird and Heron  180
+Humpty Dumpty's Eye "Egg-zam"  83
+Hungry, Happy Ramadan  837
+Hunting Day  703
+Hunting for Treasures  187
+Hurry-Scurry!  188
+Hyenas  804
+I Am a...  61
+I Am the Pine  713
+I Can Do It  24
+I Can Help!  1052
+I Can Hop  22
+I Can Jump  178
+I Can!  12
+I Can't Help Now  97
+I Don't Care  549
+I Don't Like Tomatoes!  482
+I Don't Want to Be a Banana  483
+I Go to the Dentist  41
+I Have Two . . .  43
+I Have a Book  86
+I Like Camp  162
+I Like Cats!  55
+I Like Tad  46
+I Like to Help  55
+I Like...  21
+I Live Near a Cave  624
+I Live by the Ocean  656
+I Live on an Island  948
+I Live on the Earth  631
+I Love Words  49
+I Love You  60
+I Quit!  110
+I Say  23
+I See Me  53
+I Smell Rain  153
+I Walked Around the Biggest Lake in the World  146
+I Will Help  37
+I'll Miss You  235
+I'm Not José  147
+I'm Not Running  433
+I'm Not Sleepy  116
+I'm Not a Cowboy!  760
+I'm a Mama, Too  108
+I'm a Papa, Too  113
+I...  14
+I.A.M.M  667
+Ice Racing  90
+Ida Pfeiffer: Explorer and Writer  1496
+If Davy Could Yodel  502
+If Ever I Meet a Dragon  73
+Impossible to Train: Will these pets ever learn?  255
+In the City  471
+In the Jungle  1081
+In the Rain Forest  272
+Indi's Surprise  161
+Innovators of Peace  9852
+Inside Alaska  862
+Inside of Me  144
+Into Africa  1040
+Inuit Games  646
+Invading the Finches' Nest  861
+Invasion of the Space Monkeys  487
+Inventing Tiny Ears  419
+Invention Number Three  725
+Iqbal: Advocate for Children  17656
+Is It OK to Tell?  874
+Is There Room for Me?  124
+Isabel's Idea  810
+Isabel-Fright  416
+Isabella Reads to Muffy  142
+It Flies, It Swims, It's RoboBee!  168
+It Rained Cement: I lived near an erupting volcano.  777
+It's Bath Time  50
+It's Hard to Wait  38
+It's Laundry Day  108
+It's Me!  109
+It's OK to Be Me  558
+It's Our School  86
+It's Raining Pistachios!  720
+It's Showtime!  284
+It's Spring!  48
+It's Time For. . .  74
+Ittleby Fein and the Third Bad Thing  494
+Itty-Bitty Kitty Sings  137
+JUMP!  510
+Jack Grants a Wish  175
+Jack and Billy: A True Story  798
+Jack and Julia Go to the Bank  109
+Jackie Robinson: Changing the Game  2760
+Jacob and the Baby-Sitter  401
+Jacques Cousteau, Ocean Explorer  1702
+Jade and Jamal  42
+Jake Learns to Skate  118
+James Ernest, the Tiger Salamander  684
+Jane Addams and Hull-House  993
+Japanese Children Celebrate Shichi-go-san  490
+Jared to the Rescue  485
+Jared's Favorite Button  155
+Jasmine Girl  557
+Jason's Pumpkin  511
+Jeff's First Day  196
+Jellyfish Tide  812
+Jenna  1624
+Jesse Owens  2290
+Jessie, the Guide Dog  470
+Jewel Bird  469
+Joey's Passover Question  800
+John James Audubon  12912
+Johnny Appleseed  854
+Joints Move  94
+Jonathan's Gift  123
+José's Good Luck  1037
+José's New Bed  102
+Journey to Alpha Centauri: This neighbor sun has a planet as big as Earth.  626
+Juanita's Home  1168
+Judica's Jungle  799
+Julia Under the Stairs  535
+Julie's Mess  262
+Jumping Spiders  119
+Jumping over Boundaries  532
+Junko Tabei: Free Spirit of the Mountains  533
+Jupiter's Shrinking Storm  578
+Jupiter, Mars, and a Talking Parrot  858
+Just Like Me  46
+Just My Size  444
+Just One Word  531
+Just Right  240
+Just for Elephants  737
+Just the Right Gift  628
+Karate Is for Girls!  1027
+Kate Skates  394
+Kate and Stan  160
+Keep It Clean  47
+Keeping Cool  149
+Keeping Fit at the White House  720
+Keeping the Past Alive  604
+Keeping the Peace  3992
+Kegling, Anyone?  702
+Kickball  43
+Kids CAN!  654
+Kids Can!  2381
+Kids in Charge  533
+Kids' Camp  213
+Kimo and the Ghost Crabs  896
+King of All Animals: A Chinese Folktale  618
+King of the Jungle  258
+Kip Can Win  54
+Kites  23
+Kittengarten  108
+Kitty Helpers  166
+Knights' Day  881
+Knock and Roll!: Celebrating Easter in the United States  464
+Knock! Knock!  82
+Knock, Knock  47
+Labor Day  116
+Ladybug Law  523
+Lake Day  84
+Lambs  37
+Lands of the World  141
+Laos: The Kingdom of a Million Elephants  8590
+Laugh with Lincoln  811
+Laundry Helper  142
+Layers of the Earth  44
+Lazeena  781
+Leaning Toward Winter  292
+Leaping on the Run  218
+Learning the Words  230
+Learning to Dream, Dreaming to Learn  13085
+Learning to Live Here  4406
+Learning to Skate  180
+Learning to Speak Bear  657
+Leaving Moscow  999
+Lee Boyd and the Wild Horses  770
+Lend a Hand: Habitat for Humanity  817
+Lending a Helping Claw  484
+Leonardo's Mysterious Lady  581
+Let It Grow  10
+Let Me Help  494
+Let There be Rock!  5967
+Let Us Chat  94
+Let it Roll!  2596
+Let the Bears Fish  828
+Let's Be Buddies  115
+Let's Build!  10
+Let's Celebrate Autumn  192
+Let's Celebrate the First Day of Winter  137
+Let's Dance  169
+Let's Go Fishing  159
+Let's Go Play  153
+Let's Go to Coney Island!  53
+Let's Go!  117
+Let's Have a Parade  23
+Let's Have a Sleepover  180
+Let's Look at Shadows!  78
+Let's Make Music  164
+Let's Move!  10
+Let's Pick Berries, Little Bunny  189
+Let's Plant Colors  180
+Let's Play Peek-a-Boo  60
+Let's Play!  54
+Let's Pretend  138
+Let's Save It  90
+Let's Take a Trip  41
+Let's Work Together  140
+Letter to Cambodia  1022
+Let’s Build a Snowman  49
+Lewis and Clark: Explorers of the American West  1628
+Library in a Box  427
+Life Behind the Lens  608
+Life with Koko  709
+Lift with Levers  105
+Lighting the Way  152
+Lights Out!  132
+Lights, Camera... Chewy?!  769
+Lightship  8896
+Like a Shark  887
+Lin Is Six  34
+Listen!  143
+Listening to Narwhals  690
+Little Bee Wants To Help  51
+Little Bo Peep and the Missing Sheep  526
+Little Bunny Can  171
+Little Bunny Celebrates Spring  174
+Little Bunny Has a Sleepover  173
+Little Bunny Says "Happy May Day"  165
+Little Bunny Stays Up Late  159
+Little Bunny Surprises Mama  187
+Little Bunny and Soup Weather  143
+Little Bunny and the Block Party  180
+Little Bunny and the School Nurse  184
+Little Bunny's Big Ears  183
+Little Bunny's Mistake  208
+Little Bunny's New Neighbor  186
+Little Bunny's Pool Party  135
+Little Bunny, All Alone  115
+Little Fox, Little Fox  83
+Little Frog's Bubble Trouble  140
+Little Havana: The Story of Cubans in Miami  2919
+Little Miss Muffet  123
+Little Mo  701
+Little Roundy Hen  82
+Little Snowflake: A Folktale From Russia  599
+Little Wagon  35
+Living Close to Jumbos  788
+Living Near Pronghorn: Zoe loves to see them migrate past her house.  637
+Living in a Snake Zone  464
+Living in a Wildlife Camp  680
+Living near Lions  765
+Living with Animals  179
+Living with Lizards  747
+Living with Pigs  477
+Lizard Problems  764
+Lola  1177
+Lonely Orphan Girl: The Story of Nellie Bly  2578
+Longhorn!: On a ranch in Texas, a calf is born.  327
+Lonnie Johnson  642
+Look Up to Giraffes  172
+Look Who's Awake While You're Asleep  348
+Look at My New Shoes!  105
+Look at Shadows  103
+Look at This!  176
+Look!  185
+Look! An Inuksuk  307
+Losing Your Dog  120
+Lost and Found  71
+Lost in Corn Country  918
+Lost! A Revolutionary Tale  773
+Lots of Kids Live Here  440
+Lou Kangaroo's Proper Party  499
+Louis Braille  692
+Love Is...  73
+Love from Lisa  146
+Lucky Duck  487
+Lucky Number 13: A Box Turtle Rescue Mission  466
+Lucy and Tina: Four Ears and a Tail  344
+Lucy's Puppy: Needed: a perfect name for a puppy.  395
+Lullabies All Around  47
+Lulu Builds a Choo-Choo  122
+Lulu Packed Her Suitcase  60
+Lulu Says "Moo"  75
+Lulu Throws a Party  66
+Lulu to the Rescue  61
+Lulu's Boo-Boo  116
+Lulu's Tutu  129
+Lunchtime at The Hot Pot  493
+Lydia Darragh's Secret Mission  808
+MEGA INSECT  356
+MOON Rain  647
+MVP  788
+Mac, Pam, Cam  32
+Macaroni and Fleas  791
+Maddie's New Style  484
+Made from Nature  61
+Maggie Eats Only O's  485
+Maggie's Surprise  85
+Magic Marty  793
+Magic Mitti: Meet Nutan, a Young Potter  514
+Magic Words  182
+Magnets Attract, Magnets Repel  236
+Mail for Mia  154
+Majestic Migration: Saving the Whooping Cranes  10710
+Make Way! It's the Children's Parade!  538
+Make a Kite  119
+Making Art from Shoes  670
+Making Art out of Rubbish  729
+Making Books in Braille  599
+Making Candles, Colonial Style  495
+Making Christmas Special  197
+Making Friends  93
+Making Memories  185
+Making New Friends  157
+Making Sweet Houses  178
+Making Syrup  160
+Making Tacos  7
+Making Wire Cars  749
+Making a Difference  9328
+Making a Lay-Up  469
+Making a Special Gift  182
+Making a Splash  708
+Making the Most of Your Moment  378
+Making the Pie  140
+Making the Team  941
+Malia's Chance to Dance  521
+Mama Mouse's Birthday Present  111
+Mamma Mia's World-Famous Half-Moon Pizza  477
+Man-Made Materials  45
+Manatee  139
+Manatees in Trouble  2217
+Mandy Takes the Bus  422
+Mandy from Mars  511
+Manjiro: A Life of Adventure  1772
+Many Moons Many Names  199
+Mapping The Earth  156
+March Wind  47
+Maria Can Help  28
+Maria Elena Lucas  11830
+Maria's New Garden  3106
+Marian Anderson: A Life of Song  1919
+Mariana Gives Thanks  160
+Marmalade  631
+Marveling at Mistletoe  172
+Marvin's Museum of Magnificent Things  473
+Mary Had a Little Lamb  197
+Matchstick Wonders  500
+Matt and Erik  550
+Matt's Dilemma  4179
+Maud and Blossom and the Thunderstorm  431
+Maureen's Harp  993
+Max's Birthday Surprise  154
+May I Speak  882
+Maya's Garden  138
+Me, Too! Says Lulu  75
+Measuring the Great Pyramid  427
+Meet Max  173
+Meet My Family  1615
+Meet Relish!  59
+Meet the Coyote Next Door: The dog's clever cousin is adapting to city life.  743
+Meet the Marine Iguana  126
+Meet the Origami Robot: It folds itself and goes to work!  244
+Meeting Juan's Family  125
+Meeting a Dragon  147
+Mei Mei  586
+Mel and Cam  162
+Merci, America!  403
+Merry Christmas from the Moon!  437
+Meteor: A Streak of Light  182
+Mexico City  2702
+Michael MacGregor Sure Can Snore  706
+Michael Spreckle! Where Have You Been?  834
+Michael's Manners  488
+Michi and Me  200
+Mike Gets a Library Card  438
+Mine!  172
+Mirror Baby  49
+Mischief in Mystic Valley  753
+Miss Benson's Class  851
+Miss Perfect  801
+Missing Blue  174
+Missing Mark  390
+Mistletoe Magic  366
+Mole Cleans Up  373
+Molly Mim's Shop  197
+Mom Isn't Fancy  468
+Momotaro: A Folktale From Japan  568
+Money... and Change!  648
+Monkey Baby  40
+Monkey Talk  623
+Monster Care: A Guide for New Owners  140
+Monster Gets Real  131
+Monster Hunt  131
+Monster Is Coming!  41
+Moon Phases  359
+Moon Wishes  173
+More Than One Way to Catch a Fish  462
+More than a Box  196
+Morning on the Farm  98
+Mountain Lion M6 Finds a Way: He was slinking between two habitats.  713
+Mouse Dreams  104
+Mouse and Squirrel  59
+Mouse in the House  146
+Mouse's Adventure  43
+Move to the Beat  741
+Moving Blues  1105
+Moving Day  74
+Moving Home  1124
+Moving to Mars  607
+Moving to Winter  784
+Mr. Bluebird  781
+Mr. Fix-It  3827
+Mr. Fox's Surprise  177
+Mr. Fuddle's Visitor  583
+Mr. Harris's Horses  884
+Mr. O'Malley's Home  899
+Mr. Perry's Pockets  530
+Mr. Petalucha, P.E.  761
+Mr. President, Can You Help Me?  24735
+Mr. Sticky Paws  167
+Mrs. Dooley's Dog Dilemma  531
+Mrs. Henderson Helps Out  773
+Mrs. Kirk  102
+Mrs. Mole's Birthday Present  127
+Mrs. Perez and Her Yard  121
+Mud Buddies  126
+Munching Mowers  547
+Music and the Maestro  677
+Musical Plumbing  392
+My Baby Sister  49
+My Best Day  34
+My Best Friend  96
+My Brilliant Brisa  6361
+My Cold  99
+My Computer Pal  97
+My Corner of the World  683
+My Day  84
+My Exciting Ride on the Bridges of Iceland  668
+My Family Album  51
+My Favorite Bedtime Story  219
+My First Backpack  29
+My Gold Rush Adventure  711
+My Grandpa  63
+My Grandpa, the Author  53
+My Great-Grandma  402
+My Mom  53
+My Mom Hates to Cook  787
+My Mom's Job  273
+My Muddy Little Pug  56
+My New Home in Japan  256
+My New Sister  75
+My Own Dinosaur  754
+My Pets  10
+My Picture  33
+My Puppy Sings the Blues  461
+My Puppy's Journey  653
+My Shoes Sing  59
+My Sister Snores  387
+My Special Family  218
+My Stinky Planet-Saving Summer Vacation  750
+My Toy  14
+My Vacation on Earth  642
+My Visit to a River of Ice: Up Close to Hubbard Glacier  905
+My Week Without Soap  436
+Mystery in the Old Museum  719
+Mystery of the Mud Nest  683
+Nadine's Circus Day  541
+Nail Soup: A Folktale From Sweden  623
+Name That Goldfish  178
+Nana and Me  42
+Nap Time  47
+Nathan's Pet Snails: These snails eat... other snails?  801
+National Monuments: Events and Times  9434
+National Monuments: People  8241
+Native American Mascots... Yes or No?  4640
+Nativity Scenes Around the World  410
+Natural Resources  147
+Nature Pattern  70
+Nature's Eavesdroppers  157
+Nature's Water Cycle  156
+Neighbors, Friends, and Canaries  796
+Nellie Cashman: Western Adventurer  1531
+Nelly's Other World  548
+New Can Be Fun  178
+New Friends  32
+New Kid in School  3289
+New Shoes  148
+New Shoes for Nowruz  494
+New Windows on Our Minds  703
+New Year's Eve  21
+Next Stop, Pluto!  718
+Ngorongoro Crater  1334
+Nice Mice Go to France  148
+Night Journeys  45
+Night Owl Nabs the Sheep Snatcher  625
+Night Run  895
+Night Ski  729
+Night Walk  81
+Night Watch  790
+Night of the Spotted Salamanders  434
+Night of the Whippoorwill  818
+Night on Bat Mountain  476
+Nighty-Night, Baby Bunny  49
+No Choice  914
+No Chores on Saturday?  3907
+No Fooling  746
+No Laughing Matter  545
+No Monsters Here  188
+No More Allowance  339
+No More Bullies!  2279
+No More Noises  485
+No One Ever Listens to Me!  495
+No Ordinary Frog  415
+No Peanuts for Ashley!  218
+No Petting the Orangutans, Please  821
+No Place to Play  3501
+No Potato Chips  784
+No Thanks  813
+No Translation Needed  588
+No Turkey Required  738
+Noisy Zoo  29
+Nosy Rosie's Neighborhood  105
+Not Another Candy Cane  505
+Not Just a Hole in the Ground  421
+Not Nuts About Nuts  463
+Not Your Average House Cat  145
+Not the Same  152
+Not-So-Helpful Goose  380
+Nothing Drops  751
+Now That's Interesting  490
+Obento: Art in a Lunchbox  390
+Oceans of the World  67
+October Fun  44
+Off to Market  98
+Off to the Beach  158
+Off to the Woods  90
+Officer Dog  89
+Old Friends, New Friends  1673
+Old Shoes, New Shoes: A Folktale From Iraq  678
+Old and New  679
+Omar and the Camel: Based on an Arabian Proverb  331
+Omar's Favorite  117
+Omer's Big Dive  857
+On Saturday  33
+On Treat Street  111
+On a Roll  30
+On the Farm  22
+On the Roof of the World  768
+One Chicken's Discovery: For a brid, she wasn't a bad scientist.  396
+One Cool Job  888
+One Cool Picnic, Nunavut Style  741
+One Dark Night  111
+One Froggy Night  774
+One Railroad, No Tracks  2228
+One Smart Cat: A Story from Paraguay  304
+One Squirrelly Bird  256
+One Thanksgiving or Two?  623
+One Winter Day  94
+One for All  147
+One-Box Band  215
+Only the Best for Suki: A Traditional Folktale  456
+Onstage  571
+Open Wide and Say, "Roar!"  705
+Opposite Day  455
+Our Changing Planet  21938
+Our Garden  166
+Our Gargantuan Galaxy  628
+Our Hearts Grew Together  836
+Our Home  31
+Our Home Dedication  266
+Our Lemon Tree  155
+Our Little Blue Car  186
+Our Own Country: An Irish Family in America  22281
+Our Sun's a Super Star: Don't call the Sun average!  670
+Ours  12
+Outside In: The Life and Work of Maya Lin  9701
+Outside Our Door  177
+Over in the Mansion  270
+Owney the Mail Dog  377
+Pack and Go  5799
+Packing for a Trip  165
+Painting with Thread  353
+Pals and Bugs  152
+Panda Makes a Bookmark  331
+Papa's New Pants: A Folktale  765
+Papa's Paper  380
+Papa's Perfect Birthday  126
+Paperweight Magic  696
+Parade Day  105
+Parts of My Body  10
+Parts of an Animal  10
+Pass It On  375
+Pass Over Winning"  461
+Pass the Bickies, Please  405
+Pass the Noodles, Pork, and Peas, Please!: Lucky Foods Around the World  361
+Pass the Peas, Please  607
+Past My Bedtime  68
+Patience to Pose  537
+Patrick's Cowboy Hat  81
+Patriotic Pizza  472
+Payback  858
+Peacock and Crow: A Folktale from Thailand  151
+Peas, Peas, Peas!  71
+Peekaboo, Spot!  80
+Pen Pal Penguin  91
+Penelope and Mr. Tortue  303
+Penguin Hill  491
+People of the Wetlands  2703
+Pepe Visits the Vet  101
+Pepper and the Case of the Clever Car Capers  4253
+Perfectly Healthy  194
+Perfectly Perfect  110
+Perfectly Safe  907
+Pet Show  83
+Philippine Tic-Tac-Toe  244
+Phoebe Saves George Washington  3218
+Photographing a Llama Salt Caravan  751
+Pickerel Frog  222
+Picking Apples  179
+Picking Presents  163
+Picking Pumpkins  58
+Pickups  34
+Picture This!: A pro shares tips for taking photos of animals.  261
+Pigs in My Garden  81
+Pigs on Wheels  63
+Pinata Party  707
+Pioneers in Print  10596
+Pitching Iron  825
+Pizza  62
+Pizza Shop  107
+Places  47
+Plane View  235
+Planning a Trip  136
+Plant a Sunflower House  239
+Planting Seeds  26
+Planting a Holiday  439
+Play Ball, Jaguar Paw!  735
+Play Charades  185
+Play with the Wind  171
+Playful Puppies  16
+Playground Fun  60
+Playing "I Spy"  90
+Playing Around and Around  356
+Playing Together  170
+Playing with Clay  186
+Playing with Mr. Mustard  146
+Polka-Dot Parade  71
+Polly's Purple Coat  134
+Popping In with Robert Sabuda  458
+Porridge Pot: A Folktale From Germany  657
+Potato-Salad Clues  446
+Practice Makes Perfect  152
+Princesses Don't Go Camping  421
+Pronghorn  208
+Protecting Little Penguins  724
+Puffins and Mittens: An Island Adventure  773
+Pull Your Own Weight  783
+Pumpkin Hunt  181
+Pumpkin Pie  14
+Pumpkin Time  199
+Puppy Love  811
+Puppy School  106
+Puppy's Scary Halloween  142
+Purple Water  758
+Push and Pull  77
+Pushing the Limits  793
+Putting Their Best Foot Forward: Birds' feet do many different jobs.  376
+Quacks and Snacks  66
+Queen Esther and Me  551
+Queen for an Hour  783
+Quill's Backpack  24
+R.J.s' Junk  261
+Rabbit Didn't Help  272
+Rabbit's Prize  526
+Racing Team  671
+Racing on Ice  476
+Rafiki Means Friend  802
+Rain-Storm Rap  43
+Rainy-Day Copycats  100
+Raising Elephants: Only bull elephants can calm teenage males.  676
+Raising Gorilla Babies  774
+Raju's New Book  137
+Raptor Superpowers  212
+Rat Race  11325
+Rattlesnake Crossing: This snake helps people cross the street!  314
+Ray's Rough Day  720
+Reaching New Heights  694
+Reading Champ of Newtown  1450
+Reading Together  33
+Reading at the Library  177
+Reading in Mongolia  578
+Reading to Max  455
+Reading with Catty Jane  136
+Ready for Halloween  150
+Ready for Halloween!  81
+Ready for School  161
+Ready for Winter  113
+Ready for the Beach  192
+Ready to Compete  510
+Ready to Hatch  29
+Real Robots  168
+Really Fast Food  270
+Really Late Library Books  364
+Rebecca Lee Crumpler  601
+Rebecca Rides the Trail  389
+Recess With Rosie  67
+Record-Breaking Woman  1001
+Red-Faced in Row 22  690
+Reefs Under the Sea  58
+Remembering Great-Great-Grandma  174
+Remembering Our Ancestors  598
+Reptiles and Amphibians as Pets  141
+Rescue Robots: 24robots-1winner!  211
+Rescue on Black Sunday  641
+Rescuing Miracle  382
+Respect  156
+Responsibility  218
+Return to the Wild: Reintroducing Captive-Bred Endangered Animals  15997
+Rice is Nice  77
+Rice: A Way of Life  2706
+Ride Like the Wind  736
+Riding Across America: Jenny Moshak rode 2,900 miles in 25 days.  259
+Riding a Bike  49
+Rights for Right Whales  575
+Ring Around the Asteroid  667
+Roadrunner Rescue  676
+Robin's Best Nest  230
+Robot Riley  93
+Robot on the Ice  751
+Rock Pigeon  104
+Rocks Rock!  94
+Rolling Cheese and Foolish Farmers: An English Folktale  463
+Roommates in Space  875
+Rory's Funny Story  552
+Rosa Parks: Sit Down for Freedom  1009
+Rub a Dub, Dub!  63
+Ruby Bridges  708
+Run for Fun  165
+Run to the Barn  893
+Running for the Gold  433
+Running the Hills  795
+Rusty's Nap  454
+Ryan White: Making a Difference  6400
+S is for Summer  47
+Sadako's Message of Peace  776
+Sailing Forever— Inside a Bottle  389
+Sailing to San Blas  758
+Sailing to a Glacier  156
+Salad Time  40
+Salmon for Supper  122
+Sam  28
+Sam Sleuth  745
+Sam Toes  817
+Sam, Tad, Tam  26
+Samantha  65
+Sammy Raccoon and the Hot-Air Balloon  484
+Sand Trap  289
+Sandra on Sports  834
+Sandwich Surprise  147
+Sandy Face  93
+Santa in Cyprus  702
+Sap's Running  490
+Save the Manatees  100
+Save the Rain Forests  1089
+Saving Snow Leopards: Counting these cats is a mountain adventure.  720
+Saving a Butterfly: The tiny egg needed milkweed to grow.  475
+Saving a Tiger Named Cinderella  667
+Saving the Daisies  434
+Saving the Village Bicycle  718
+Say Cheese!  200
+Saying "I Love You"  141
+Scalloped Hammerhead Shark  45
+Scaredy Rabbit  677
+Scaredy-Cat Abby  858
+Scaredy-Cat Stephen  496
+School Friends  150
+Scientists Pursuing their Dreams  15323
+Sculpting Lincoln: Anthony Frudakis brings a President to life.  323
+Sculpting Peace  645
+Seasons Go A-Spinning  65
+Seconds from Winning  714
+Secret Code: A Secret Code from El Salvador  180
+Secrets of the Rainbow  685
+See My Muscle?  214
+See You in the Morning  133
+See the Shooting "Stars"  807
+Seeds  42
+Seeing New Things  177
+Sensational Sea Babies  132
+Separate Is Not Equal: Brown Versus Board of Education  1312
+Sequoyah and the Cherokee Alphabet  2746
+Serena's Suitcase  412
+Serving Up Something Special  188
+Shabbat with Bertie Bird  407
+Shake, Shep!  76
+Shampoo  58
+Shapes In Nature  10
+Share Day  2279
+Sharing  7
+Sharing Books  166
+Sharing Holiday Treats  183
+Sharing Places  4790
+Sharing With Luke  72
+Sharing a Birthday  166
+Sharing a Lake with Hippos  458
+Sharing at Camp  143
+Sharing in Art Class  45
+Sharing the Adventure  287
+Shepherd, Shepherd  89
+Shhh! Baby Bunny Is Sleeping  165
+Shoes  33
+Shoot with Power  181
+Shooting for the All-Stars  8040
+Show-and-Snail  677
+Showtime!  97
+Shrieking Toad and Dancing Ant  691
+Sia Connects the Dots  439
+Sidewalk Artists  157
+Sierra's Triathlon  806
+Sign Language  4558
+Signed, Sealed, and Sorry  301
+Silly Little Duck  72
+Simple Gifts  516
+Sing Me a Soft Song, Mr. Wind  311
+Sink or Float  90
+Sir Walter and the Dragon Babies  691
+Sit Quietly  390
+Six Seconds of Lightning  740
+Six Spotted Seals  83
+Skip and Scout  37
+Skunk Uses Her Head  521
+Skunks!: Could we help these little stinkers?  830
+Sky Bear's Gift: An Ojibwa Folktale  155
+Sledding Together  217
+Sleepyheads Snooze  93
+Slick and Sleek: A High Five Mini Book  11
+Sliding into the Future  680
+Small Talk  768
+Small-Town Volleyball  780
+Snake Walk  120
+Snip-Snip Valentine  205
+Snooze News  471
+Snow Day in Space  783
+Snow Music  411
+Snow Tricks  142
+Snowballs in Space: Comets can put on spectacular shows.  547
+Snowbird  169
+Snowflake Photography  506
+Snowman and Friends  29
+Snuggle Time  50
+So Many Questions!  126
+So Much To Touch  63
+So Say the Little Monkeys: A Brazilian Folktale  422
+Soaring "on the Wings of the Wild"  487
+Soccer Everywhere  670
+Sockland  340
+Solving the Violin Mystery  695
+Some Actor  911
+Someday Comes  812
+Something Different  964
+Something in My Shoe!  47
+Something to Howl About: In a dark forest, a scientist learns how wolves communicate.  522
+Songbirds All Year  310
+Songs of Bronze: Sculptures by Tina Allen  3520
+Sonny, with a Chance of Buckets  774
+Sooner or Later?  10
+Sounds Good!  595
+Sounds Like Maple Syrup  44
+South Korea  1500
+Space Flight Firsts: Diversity in America's Astronaut Corps  9819
+Space Junk  729
+Space Stations: Stepping Stones into Space  297
+Spaghetti Catastrophe  753
+Speak English!  5176
+Special Helpers  1442
+Special Person Day  59
+Speechless  798
+Speed-Math Champ of 4B  422
+Spider Spins  49
+Spin, Little Dreidel  486
+Spinning the Sea: The Story of the Fishing Industry  9894
+Splash, Waddle, and Swim  140
+Splish-Splash  130
+Spreading Kindness, Rock by Rock  327
+Spring Scooters  49
+Spring Surprise  444
+Spring Weather  78
+Spring: Nature Awakens  346
+Springtime  28
+Sprout Some Beans  112
+Spying on Hermit Crabs: Would they come out of their shells?  719
+Spying on Snails  312
+Squeaks in the Floorboard  288
+Squeaky Clean  72
+Squirrel School  491
+Squirrels That Smell Like Snakes  804
+Stage Fright  461
+Stalking the Queen of Tigers  792
+Stampede!  815
+Stan's Olympic Plans  462
+Star of the Week  206
+Stars That Aren't Round  728
+Stars You Can See  54
+Stars and Sea Lions: Camping on a Galápagos Island  554
+Start Your Engine  200
+Starting Over  5169
+Starting School  149
+Static Electricity  199
+Statue of Liberty  865
+Stay Cool  106
+Stay Healthy!  10
+Stay Warm  116
+Staying Dry  147
+Staying Warm in Winter  268
+Stephanie Kwolek  645
+Stephen Bishop: Cave Explorer  770
+Sticks Up! Swim Down! Score!  680
+Still Good for Something  522
+Stinky Treasure  466
+Stone Skipping: Science reveals the secrets of champions.  332
+Stone Soup  67
+Stop the Atlantic Express!  730
+Story Time  90
+Storybirds: This family tells a story through art.  773
+Strange Footprints in the Snow  444
+Street Fair  279
+Stroking Molecules  796
+Stroller Time  77
+Strong for Skeena  905
+Stuart, the Lucky Library Cat  422
+Stuck by Luck  744
+Sugar and Shadow  162
+Suki Comes Home  5170
+Sum Fun with Squares: These squares really add up.  307
+Sumintra Celebrates Divali  710
+Summer Camp Hawaiian Style  805
+Summer With Aunt Ting  10986
+Summer with Papaji  808
+Summer's Here!  164
+Sundae Is Valentine's Day  752
+Sunny Seeds  48
+Surf's Up  607
+Surfing Iowa  915
+Surprise on the Path  158
+Surprise!  164
+Surprising Gran  175
+Surprising Sea Horses  101
+Surprising Uses for Plants  123
+Surrounded by Food: Farm work is not easy. But it can be sweet!  354
+Suzy's Birthday  135
+Sweet Potatoes for Benny  159
+Sweetened Condensed Milk  823
+Swim to School  46
+Swimming the English Channel  2704
+Symbols of Freedom  223
+TK and the Face Snaps  5052
+Tackling the Trash  897
+Tacos  53
+Tadpole and Fish  85
+Take Bearings for a Spin  357
+Take a Deep Breath  245
+Taking His Best Shots  693
+Taking a Picture  150
+Taking a Trip  178
+Talent Night  641
+Tales Told Around the World  9786
+Tales from the Shore  410
+Tanya's Teddy Bears  1151
+Tatenda Teaches His Town  638
+Tatyana McFadden Can Do Anything  753
+Teachers All  134
+Teachers Are Special  242
+Teaching Cats to Purr-form  663
+Teaching Pinkie  183
+Teamwork  45
+Teeny Tiny Tardigrades  343
+Teeter-Totter  241
+Ten Best Friends  86
+Tex Goes Camping  134
+Tex Has a Bad Day  195
+Tex Helps a Friend  189
+Tex Makes a New Friend  170
+Tex and Indi Go to the Pool  178
+Thank the Bees  198
+Thank the Worms  172
+Thanksgiving Dinner  8
+Thanksgiving Surprise at the Bottom of the World  745
+That Cat!  458
+The Adventures of Spot: A Big Decision  33
+The Adventures of Spot: A Hidden Treat  25
+The Adventures of Spot: A Locked Door  19
+The Adventures of Spot: A New Toy  26
+The Adventures of Spot: A New Trick  21
+The Adventures of Spot: A Pesky Fly  23
+The Adventures of Spot: A Pond with a View  20
+The Adventures of Spot: A Rainy Day  27
+The Adventures of Spot: A Snowstorm  20
+The Adventures of Spot: A Sticky Situation  14
+The Adventures of Spot: A Strange Box  29
+The Adventures of Spot: A Strange Rug  21
+The Adventures of Spot: A Windy Day  21
+The Adventures of Spot: Baking Biscuits  26
+The Adventures of Spot: Bath Time  22
+The Adventures of Spot: Be Careful!  27
+The Adventures of Spot: Bedtime for Spot  31
+The Adventures of Spot: Best Friends  29
+The Adventures of Spot: Big Red Ball  28
+The Adventures of Spot: Butterfly!  20
+The Adventures of Spot: Camp-Out  28
+The Adventures of Spot: Catch That Fly  18
+The Adventures of Spot: Chase the Ball  24
+The Adventures of Spot: Chasing Away the Storm  28
+The Adventures of Spot: Cleanup Time  22
+The Adventures of Spot: Dancing Leaves  29
+The Adventures of Spot: Down the Hill  20
+The Adventures of Spot: Fall Colors  28
+The Adventures of Spot: Fall Friends  26
+The Adventures of Spot: Find the Ball  27
+The Adventures of Spot: Find the Toy  29
+The Adventures of Spot: First Snow  17
+The Adventures of Spot: Follow the Tracks  18
+The Adventures of Spot: Getting Wet  24
+The Adventures of Spot: Going for a Swim  24
+The Adventures of Spot: Good-Bye, Fly!  21
+The Adventures of Spot: Guarding the Garden  19
+The Adventures of Spot: Helping Out  23
+The Adventures of Spot: Hide and Seek  30
+The Adventures of Spot: Hiding Out  25
+The Adventures of Spot: I Can Fly  23
+The Adventures of Spot: I Can't Sleep  20
+The Adventures of Spot: I Found You!  28
+The Adventures of Spot: I Love to Play  27
+The Adventures of Spot: Ice-Skating Time  21
+The Adventures of Spot: In a Tree  24
+The Adventures of Spot: In the Shade  25
+The Adventures of Spot: In the Woods  25
+The Adventures of Spot: Indoor Fun  27
+The Adventures of Spot: It's Heavy!  24
+The Adventures of Spot: It's Raining!  19
+The Adventures of Spot: It's Too Cold!  27
+The Adventures of Spot: It's Windy!  26
+The Adventures of Spot: Itchy Spot  17
+The Adventures of Spot: Keeping Cool  30
+The Adventures of Spot: Keeping Warm  23
+The Adventures of Spot: Keeping Warm on a Cold Night  24
+The Adventures of Spot: Let Me In!  24
+The Adventures of Spot: Let's Celebrate!  20
+The Adventures of Spot: Let's Climb  21
+The Adventures of Spot: Let's Go Hiking  29
+The Adventures of Spot: Let's Play!  22
+The Adventures of Spot: Let's Run  20
+The Adventures of Spot: Look at the Snow!  18
+The Adventures of Spot: Look!  19
+The Adventures of Spot: Loud Autumn Leaves  29
+The Adventures of Spot: Ma Knows Best  22
+The Adventures of Spot: Meeting Splinter  24
+The Adventures of Spot: Meeting a Turtle  23
+The Adventures of Spot: Merry Christmas  23
+The Adventures of Spot: Mud Is Fun!  24
+The Adventures of Spot: Naptime  20
+The Adventures of Spot: Noisy Squirrel  32
+The Adventures of Spot: On a Hike  29
+The Adventures of Spot: On a Walk  17
+The Adventures of Spot: Ouch!  19
+The Adventures of Spot: Pa's Chair  28
+The Adventures of Spot: Play in the Leaves  22
+The Adventures of Spot: Ribbit!  37
+The Adventures of Spot: Shadow Fun  22
+The Adventures of Spot: Sharing a Toy  24
+The Adventures of Spot: Signs of Spring  20
+The Adventures of Spot: Sleigh Ride  24
+The Adventures of Spot: Snack Time  20
+The Adventures of Spot: Splinter Discovers Hail  30
+The Adventures of Spot: Splinter Is Jumpy  30
+The Adventures of Spot: Splinter Is Sick  27
+The Adventures of Spot: Splinter is Curious  20
+The Adventures of Spot: Splinter's Ball of Yarn  30
+The Adventures of Spot: Splinter's Bath  25
+The Adventures of Spot: Splinter's Dream  34
+The Adventures of Spot: Splinter's Nap  29
+The Adventures of Spot: Splinter, the Hunter  22
+The Adventures of Spot: Spot Cleans Windows  23
+The Adventures of Spot: Spot Cools Off  29
+The Adventures of Spot: Spot Finds Baby Bunnies  29
+The Adventures of Spot: Spot Finds a Stick  24
+The Adventures of Spot: Spot Gets a Stocking  29
+The Adventures of Spot: Spot Has a Cold  22
+The Adventures of Spot: Spot Has a Home  25
+The Adventures of Spot: Spot Helps a Mouse  18
+The Adventures of Spot: Spot Helps in the Garden  24
+The Adventures of Spot: Spot Is Pooped  26
+The Adventures of Spot: Spot Loses a Tooth  20
+The Adventures of Spot: Spot Loves the Month of May  24
+The Adventures of Spot: Spot Meets a Grasshopper  22
+The Adventures of Spot: Spot Plays by Himself  25
+The Adventures of Spot: Spot Says Hello!  19
+The Adventures of Spot: Spot Sees a Groundhog  26
+The Adventures of Spot: Spot Wants to Fly  23
+The Adventures of Spot: Spot and His Shadow  29
+The Adventures of Spot: Spot and the Hummingbirds  28
+The Adventures of Spot: Spot and the Rabbit  23
+The Adventures of Spot: Spot's Bedtime Routine  26
+The Adventures of Spot: Spot's Smart Nose  35
+The Adventures of Spot: Spot's Trick  20
+The Adventures of Spot: Spring Is Here  20
+The Adventures of Spot: Summer Fun  29
+The Adventures of Spot: Super Friends  26
+The Adventures of Spot: Surprising Mole  22
+The Adventures of Spot: Thanksgiving Dinner  30
+The Adventures of Spot: The Brook  30
+The Adventures of Spot: The Firefly  25
+The Adventures of Spot: The Foggy Day  28
+The Adventures of Spot: The Guard Dog  25
+The Adventures of Spot: The Picnic  21
+The Adventures of Spot: The Snowball  23
+The Adventures of Spot: The Spiderweb  21
+The Adventures of Spot: The Visitors  22
+The Adventures of Spot: Tickles!  28
+The Adventures of Spot: Time for Dinner  21
+The Adventures of Spot: Time for Tag  20
+The Adventures of Spot: Time for Thanks  31
+The Adventures of Spot: Time to Eat!  25
+The Adventures of Spot: Trail Time  21
+The Adventures of Spot: Washday  32
+The Adventures of Spot: What's That Smell?  15
+The Adventures of Spot: What's That Sound?  26
+The Adventures of Spot: What's This?  14
+The Adventures of Spot: Where Can I Hide?  26
+The Adventures of Spot: Where Is Everyone?  17
+The Adventures of Spot: Where to Nap  26
+The Adventures of Spot: Where's My Ball?  33
+The Adventures of Spot: Who Is Hiding?  17
+The Adventures of Spot: Who Is Scared?  27
+The Adventures of Spot: Who Is That?  24
+The Adventures of Spot: Who Wants to Play?  20
+The Adventures of Spot: Who Was Digging?  30
+The Adventures of Spot: Who's There?  24
+The Adventures of Spot: Whoops!  19
+The Adventures of Spot: Why Does Splinter Purr?  24
+The Adventures of Spot: Why Is Spot Barking?  26
+The Adventures of Spot: Yummy!  21
+The Adventures of Spot:The Big Ball of Yarn  20
+The Adviser  905
+The All-American Girls Baseball League  3119
+The All-Year Christmas Tree  689
+The Alligator's Super Sense  699
+The Amazing Turnip  728
+The American Red Cross: Then and Now  24461
+The Amish  7609
+The Ant and the Dove: An Aesop Fable  122
+The Ant and the Grasshopper  134
+The Apple-Pie Monster  773
+The Awesome Opossum  234
+The BIGGEST Thing in the Garden  182
+The Baker and His Neighbor: A Folktale From Peru  311
+The Basement Ghost  733
+The Basketball Game  78
+The Bean Plant  2356
+The Bean Plants  60
+The Beauty of Sand  318
+The Beckoning Cat  566
+The Bedtime B's  133
+The Bells of Springtime  354
+The Best City Block  316
+The Best Easter Basket Ever  143
+The Best Gift  237
+The Best Place  2007
+The Big Dig at Puget Sound: A Paul Bunyan Tall Tale  1367
+The Big Move  149
+The Big Mustache  503
+The Big Picture  89
+The Big Race  59
+The Big, Soft Chair  83
+The Bigwigs' Bad Hair Day  397
+The Birthday Box  1444
+The Birthday Card  3839
+The Birthday Mystery  1466
+The Birthday Party  125
+The Block Party  171
+The Blue Line  483
+The Blue Racer  7192
+The Bluebird and the Coyote: An Akimel O'odham Folktale  350
+The Box House  159
+The Brave Knight  596
+The Bunch of Bananas  400
+The Bunny Hop  176
+The Butterfly  27
+The Buzz About Hummingbirds  359
+The Cake Master  757
+The Camels of Egypt  425
+The Camp-Out  88
+The Carrot Party Adventure  498
+The Case of the Missing Dinosaur  718
+The Case of the Missing Left Shoe  783
+The Case of the Missing Toy  767
+The Case of the Purple Party Paper  475
+The Case of the Stolen Silk: A Korean Folktale  738
+The Cat's Bell  706
+The Chair Lift  483
+The Challenge Game  564
+The Chameleon's Quick Skin Trick  564
+The Champion of Quiet  738
+The Chilling Mayflower Mystery  801
+The Chimney Riddle  400
+The Chinese Mitten Crab Caper  4088
+The Chore Chain  668
+The Chrismon Tree  380
+The Christmas Candles  782
+The Clever Brothers: A Folktale from Uzbekistan  772
+The Cost of Freedom: Saving the California Condor  8942
+The Cowboy's Home on Wheels  772
+The Cows at Riley Hill  515
+The Crooked Pumpkin  466
+The Crossing Guard  285
+The Crow and the Pitcher: An Aesop Fable  168
+The Cupboard  802
+The Curious Frog and the Milk Pail  82
+The Damper Ball Rocks!: This swinging ball calms a tower's shakes, even in quakes.  752
+The Day Bob Went Missing  757
+The Day I Danced Onstage  852
+The Day Trip  2480
+The Dental-Floss Fish  719
+The Dinner Bucket  780
+The Dishonest Merchant: A Romanian Legend  642
+The Dog Who Barked Backward  766
+The Dollar Dilemma  147
+The Dolphin Who Loved Games  740
+The Donkey Egg  488
+The Dust-Colored Coyote: A Pima Legend  725
+The Earth Breathed Fire  834
+The Earth Is Really Moving  425
+The Emperor Doll  503
+The Enemy  802
+The Family Show  54
+The Family Tree  454
+The Famous Red-Eyed Tree Frog  741
+The Fastest Horse in the West  13387
+The Fastest Kid on Albert Street  475
+The Fastest Woman in the World  682
+The Fastest Worms in the World  173
+The Field  873
+The Fire-Station Monster  168
+The First Day  95
+The First Day of Summer  167
+The First Spring Picnic  137
+The Fish-Bot That Fits In at School  294
+The Flying V  807
+The Fog Lifts  723
+The Food Festival  70
+The Friends  852
+The Frog Choir  504
+The Frog Prince: A Folktale From Germany  605
+The Fruit Bowl Caper  57
+The Fun Lot  61
+The Game  46
+The Ghost Room  210
+The Ghost of Yuckachi Swamp  779
+The Ghost of the Apple Orchard  480
+The Giant Turnip  121
+The Giant in the Forest  638
+The Gift  1352
+The Gift of Guide Dogs  325
+The Gift of the Crane: A Folktale From Japan  664
+The Gifts of the Trees: A Folktale From the Iroquois  484
+The Glockentown Clock Caper  726
+The Gnarled Ancients  370
+The Goat in the Chile Patch: A Folktale From Mexico  578
+The Golden Gosling  768
+The Golden Pitcher: A Folktale From Mongolia  603
+The Good Old Days  139
+The Goose Who Gobbled  251
+The Grandfather's Story  300
+The Gray Castle  74
+The Great Barnyard Rescue  127
+The Great Big Turnip: A Folktale From Russia  526
+The Great Free-Throw Challenge  495
+The Great Groundhog Giveaway  751
+The Great Onion Search  180
+The Great School Uniform Debate  20156
+The Greedy Spider: A Folktale From Chana  282
+The Guard, the Monkey, and the King's Crown  484
+The Guest  669
+The Halloween Copycat  455
+The Hank House  1470
+The Hanukkah Candle  761
+The Hanukkah Helper  157
+The Hare and the Tortoise: An Aesop Fable  529
+The Hat  122
+The Hedley Kow: An English Folktale  380
+The History and Geography of El Salvador  2737
+The History of Antarctic Exploration  15536
+The Holiday House  454
+The Horseshoe Crab: A Living Fossil  797
+The Idea Machine  749
+The Invisible Boy  557
+The Jar of Apples  1067
+The Jumping Hat  162
+The Junk Drum  948
+The Kick That Wasn't  808
+The King of Halloween  435
+The King's Challenge  510
+The Kittens  244
+The Language of Snakes  736
+The Leaky Robot  473
+The Legend of the Evergreens: A Korean Folktale  195
+The Leopard and the Rat: A Story from Ghana  723
+The Leopard's Spots  310
+The Leprechaun Trap  1196
+The Letter  98
+The Life Cycle of Frogs  924
+The Life of Coretta Scott King  9595
+The Lights of Saint Lucia  849
+The Lion and the Mouse  248
+The Little Jet Engines That Can  768
+The Little Red Hen  111
+The Log  62
+The Lucky Penny  188
+The Magic Box  118
+The Magic Handmill: Based on a Norwegian Folktale  796
+The Meaning of "Never"  685
+The Mice  42
+The Mice-Cream Shop  164
+The Mighty Volcanoes of Mars  596
+The Milky Way, Our Home  899
+The Missing Cookies  171
+The Missing Name  565
+The Mixed-up Fish Dance  791
+The Moon Colony  16684
+The Most Valuable Treasure: A Norwegian Folktale  807
+The Mother's Day Present  411
+The Mouse Girl: A Folktale From India  409
+The Mysterious Dark Day  732
+The Mysterious Egg  339
+The Mystery Bus Stop  696
+The Mystery of Pig's Missing Leaves  367
+The Mystery of the Magic Lunch Bag  440
+The Mystery of the Missing Voice  308
+The Mystery of the Sleeper Shark  704
+The Mystery of the Wet Lizards: Why do they stand like that... and in the rain  778
+The Nature of Star Dust  8318
+The Net  95
+The New Boy  768
+The New Kid  185
+The New Sitter  203
+The Night the Lights Went Out  296
+The Nile File: Our World's Longest River  3415
+The Noisy House: A Folktale From Eastern Europe  526
+The Number 7 Jinx  716
+The Older One  160
+The Pack-Rat Puzzle  961
+The Paper Boat: A Chinese Folktale  787
+The Paralympic Games  450
+The Passover Easter Basket  800
+The Path Behind the Library  8239
+The Perfect Friend  451
+The Perfect Hiding Spot  412
+The Perfect Job for Odo  114
+The Perfect Present: Sometimes it's right under your nose  281
+The Perfect Snowman  161
+The Pig  48
+The Place for Cat  56
+The Poetry Party  167
+The Poppy Lady  753
+The Poster Contest  214
+The Power of Friendship  704
+The President Pitches!: A Baseball Tradition Begins  681
+The President's Big Day: A Behind-the-Scense Look with John Riley  769
+The Pride of the Family  7867
+The Prince of Whales: Wyland may be a whale's best friend.  709
+The Princess and the Beggar: A Korean Folktale  3343
+The Princess and the Tulips  371
+The Principal and the Popcorn Popper  441
+The Private I's and the Case of the Big Stink  505
+The Private I's and the Case of the Mixed-Up Message  448
+The Prize  831
+The Promise  978
+The Puzzle of the Green Bear  303
+The Quest to Learn: The Quest to Learn  9820
+The Quicksand That Ate My Shoes  668
+The Rabbit Trap  376
+The Real Story of the Snapping Shrimp  805
+The Retake  861
+The Right Note  593
+The Right Pet for Carl  74
+The Right Play  442
+The Right Shoes  148
+The Right Thing  528
+The Ring  616
+The Road to Beijing  10173
+The Rocky Room  158
+The Sack Dash  59
+The Sand Dune  205
+The Save  1035
+The Scarf  12623
+The Scary Storm  44
+The Scoop on Ice-Cream Headaches  787
+The Sea Turtle's Built-In Compass  796
+The Seal Is a Sneaky Swimmer: A scientist caught it saving energy  781
+The Seal in Our Backyard: We kept him safe while he changed his coat.  412
+The Secret  510
+The Secret Life of the Brook Trout: This fish is out of sight.  316
+The Secret of New York  911
+The Secret of the Strange Flower  638
+The Secret of the Umbrella  459
+The Shady Tree  483
+The Shapes Have a Picnic  126
+The Ship  65
+The Shoemaker and the Elves: A Folktale From Germany  566
+The Sighting  843
+The Sign  858
+The Sixth Moon of Planet Coron  2746
+The Skating Lesson  379
+The Skeleton Crew  239
+The Skin You're In  798
+The Sleepover  343
+The Sleepover on Felix's Porch  148
+The Slide  65
+The Snow Sculptor  338
+The Snow Turkey  1005
+The Snowshoe Artist  501
+The Song of the Mouse: Like birds and whales, mice can carry a tune.  790
+The Sound I Love Best  71
+The Speech  954
+The Spider's Lullaby  338
+The Spooky Science of Fear  611
+The Sticks  69
+The Story of Blue Jeans  479
+The Stream  50
+The Structure That Never Sleeps  884
+The Summer Box  218
+The Summer Triangle  848
+The Sun Stands Still  763
+The Swimming Test  771
+The Tailor's Wish: A Russian Folktale  902
+The Tall and the Small  155
+The Tallest Tall Tale  203
+The Tarantulas of Pie Town  855
+The Tea Party  208
+The Tell-Tail Wag  466
+The Ten Best Things About Cairo  1405
+The Tennin's Robe  728
+The Tenth Puppy  763
+The Thanksgiving Garden  468
+The Thing About Strays  1199
+The Things Wings Do  203
+The Three Bears Go Fishing  145
+The Three Little Worms  179
+The Three Little Worms Get Into Shape  153
+The Three Little Worms Have Fun  150
+The Three Little Worms Have a Birthday  176
+The Three Little Worms Spell It Out  129
+The Three Little Worms to the Rescue  156
+The Three Wishe: A Folktale from England  641
+The Timbertoe: Night Creatures  44
+The Timbertoe: Pumpkin Pie  59
+The Timbertoe: The Mysterious Moon  47
+The Timbertoe: Tommy's Hat  51
+The Timbertoes: A Bed for Spot  48
+The Timbertoes: A Colorful Winter  47
+The Timbertoes: A Familiar Scarecrow  40
+The Timbertoes: A Hungry Hike  37
+The Timbertoes: A Muddy Rescue  42
+The Timbertoes: A Surprise Dinner  45
+The Timbertoes: Art Show  34
+The Timbertoes: Better Than a Rake  39
+The Timbertoes: Feed the Birds  56
+The Timbertoes: Full Moon  39
+The Timbertoes: Gutter Ball  33
+The Timbertoes: Hat Rescue  41
+The Timbertoes: Hickory Nuts  38
+The Timbertoes: It Feels Like...  41
+The Timbertoes: Leftovers  45
+The Timbertoes: Mabel's Blanket  22
+The Timbertoes: Making Soup  38
+The Timbertoes: Meeting Mama Bird  27
+The Timbertoes: Missing Pieces  45
+The Timbertoes: Morning Music  27
+The Timbertoes: Pa's Hat  35
+The Timbertoes: Pa's Paddling Machine  48
+The Timbertoes: River Monster  48
+The Timbertoes: Sharing the Harvest  39
+The Timbertoes: Skating Fun  41
+The Timbertoes: Sour Grapes  27
+The Timbertoes: Spring Showers  42
+The Timbertoes: Starlings' Lunch  45
+The Timbertoes: Summer Soccer  43
+The Timbertoes: Sweet Cider  29
+The Timbertoes: The Perfect Apple  45
+The Timbertoes: The Tree House  48
+The Timbertoes: Up High  41
+The Timbertoes: Who's Quickest?  47
+The Timbertoes: Winter Frost  38
+The Timbertoestm™: A New Game  31
+The Timbertoes™: A Chilly Adventure  44
+The Timbertoes™: A Heartfelt Surprise  46
+The Timbertoes™: A Pumpkin Party  52
+The Timbertoes™: A Rare Sighting  51
+The Timbertoes™: A Summer Treat  49
+The Timbertoes™: A Tasty Treat  46
+The Timbertoes™: An Autumn Surprise  44
+The Timbertoes™: Backyard Game  43
+The Timbertoes™: Building a Pet Door  53
+The Timbertoes™: Building a Tower  11
+The Timbertoes™: Butter and the Bell  58
+The Timbertoes™: Canoe Adventure  46
+The Timbertoes™: Creature Concert  38
+The Timbertoes™: Doggy Distraction  46
+The Timbertoes™: Fall Harvest  47
+The Timbertoes™: Family Picnic  56
+The Timbertoes™: Fix-It Day  50
+The Timbertoes™: Garden Thieves  52
+The Timbertoes™: Gathering Nuts  57
+The Timbertoes™: Helping Hands  42
+The Timbertoes™: Hunting for Honey  44
+The Timbertoes™: Long-Distance Calling  43
+The Timbertoes™: Mabel's Mud Pies  57
+The Timbertoes™: Making a Splash  50
+The Timbertoes™: May Day Fun  45
+The Timbertoes™: Meteor Shower  55
+The Timbertoes™: Muddy Clues  39
+The Timbertoes™: Pa's Dream  57
+The Timbertoes™: Pa's Latest Invention  53
+The Timbertoes™: Planting Potatoes  19
+The Timbertoes™: Practice Makes Perfect  46
+The Timbertoes™: Pumpkin Problem  45
+The Timbertoes™: Rafting  26
+The Timbertoes™: Raking Leaves  42
+The Timbertoes™: Ready for Winter  55
+The Timbertoes™: River Slide  46
+The Timbertoes™: Sap's Running!  44
+The Timbertoes™: Sign of Spring  49
+The Timbertoes™: Skis for Everyone!  51
+The Timbertoes™: Snow Play  53
+The Timbertoes™: Snow and Sun  28
+The Timbertoes™: Spot Digs Up a Secret  57
+The Timbertoes™: Spring Is Coming  32
+The Timbertoes™: Squiggly Pretzels  50
+The Timbertoes™: Star Gazing  48
+The Timbertoes™: Stuck Indoors  43
+The Timbertoes™: Summer Heat  55
+The Timbertoes™: Tent Trouble  50
+The Timbertoes™: The Grasshopper  49
+The Timbertoes™: Tommy Gets Fit  41
+The Timbertoes™: Walk in the Snow  40
+The Timbertoes™: What's for Dinner?  49
+The Timbertoes™: Winter Wonderful!  45
+The Timbertoes™: Wishing for Spring  43
+The Timid Rabbit: A Folktale From India  633
+The Tortoise, the Hare, and the Penguin  500
+The Town Mouse and the Country Mouse  112
+The Town Mouse and the Country Mouse: An Aesop Fable  640
+The Traveling Pillow  229
+The Treasure That Almost Got Away  613
+The Tree Woman of Africa  775
+The Trouble with Tacos  192
+The True Reward: A Mongolian Folktale  726
+The Tug of War: A Folktale From Africa  584
+The Tuskegee Airmen  3125
+The Udala Tree: A Folktale From Africa  564
+The Ugly Duckling: A Folktale From Denmark  693
+The Unfinished Robot  612
+The Unhappy Troll  62
+The Unstoppable Song  417
+The Unwelcome Neighbor: A tale from the Panchatantra  557
+The Ups and Downs of Being Luis  557
+The Valentine Swap  523
+The Video Game Hero  12911
+The View from Camp  802
+The View from Left Field  617
+The Waiting Game  176
+The Water Chase:Drench that boy!  422
+The Way Things Used to Be  468
+The Way the Mop Flops  774
+The Weird Day with Walden  522
+The Well  751
+The White Crane: A Japanese Folktale  1003
+The White Squirrels of Marionville  334
+The Winning Recipe  744
+The Wish Fish  201
+The Woman in the Moon: A Kumeyaay Legend  603
+The Word Is . . .  914
+The World's Smallest Park  494
+The Worth of a Chicken  799
+The X-Ray  50
+The Year of Confusion  539
+The Year the Pilgrims Stepped on Governor Bradford  670
+The Young Author  79
+Theodore  77
+There's a Frog in His Throat!  480
+They'll Be Back!  451
+Thicker than Water  2916
+Things We Like  54
+Think Cool  90
+This Friend Can  133
+This Keyboard Fits Like a Glove  340
+This Land is Your Land  5171
+Thomas Jefferson Is Homesick  639
+Thomas Jefferson's Mysterious Bones  827
+Those Wacky Shoes!  753
+Three Is Not a Crowd  143
+Three Little Monkeys  48
+Three Tracks in the Snow  807
+Through the Ice  701
+Throw In Your Line!  450
+Thunder and the Storm  678
+Thunderstorm in the Jungle  171
+Tiana's New Pet  105
+Tim Is Big!  25
+Time and Seasons  59
+Time for a Haircut  170
+Time for a Nap  107
+Time for a Party  156
+Time to Be Thankful  205
+Time to Celebrate!  156
+Time to Change Clothes  263
+Time to Eat!  140
+Time to Help Time To Play  222
+Time to Move  198
+Time to Plant  166
+Time to Trick-or-Treat  188
+Tin-Can Summer  761
+Tiny Oysters Do a Big Job  736
+Tips from a Pro  216
+To Catch a Moose: How do you capture a calf without hurting it?  762
+To Have a Friend . . .  775
+To Make a Lake  77
+To Market  98
+To Sea: A Voyage of Discovery  6941
+To the Moon, Together  161
+To the Point  238
+Today Is Different  79
+Together  7
+Together and Alone  66
+Tom and Me  63
+Tom's New Class  62
+Tommy Trout  142
+Tons of Fun  188
+Too Busy to Swim  245
+Too Close to a Volcano?  709
+Too Many Shopping Bags!  192
+Too Many Tomatoes  227
+Too Much Noise!  51
+Tools for a Giant Task  772
+Tornado Coming!  905
+Touching the Sky  539
+Track the Moon  127
+Tracking Rattlesnakes  773
+Tracks in the Snow  112
+Trail into Darkness  793
+Train Your Brain for School  805
+Training Wheels  604
+Trash-Truck Parade  158
+Traveling Through the City  167
+Traveling Time  162
+Traveling with Teddy  33
+Treasure Hunt  26
+Treasure in the Field: A Vietnamese Folktale  540
+Tricking Mr. Brown  130
+Tricks  22
+Trina's Unusual Day  437
+Trouble in Tall Town  617
+Trouble the Water  16563
+Trucks Build a House  105
+Trumpet Dreams  259
+Trust Yourself  632
+Try Something New  168
+Tuk the Hunter  325
+Tulip Lane Holidays  441
+Tummy Rumble  76
+Turkey Cookies  136
+Turtle and the Lady: Based on a Chinese Folktale  3740
+Turtles Have Feelings Too  1945
+Turtles in a Hurry  37
+Twenty-Five Cents  674
+Twice as Nice  40
+Twins Days  163
+Twins at the Table  36
+Twister!  691
+Two Bens  162
+Two Too Many Turtles  344
+Two Young Frogs: A Japanese Folktale  351
+Uh-Oh!  43
+Under the Ice  413
+Unearthing the Arabia: A Sunken Steamboat Full of Surprises.  923
+Unlikely Friends  6527
+Untangling a Giant Web Mystery  625
+Up High with Hydraulics  210
+Up and Down  73
+Up in a Tree  158
+Use It Again  1192
+Use Your Imagination  156
+Use Your Words  173
+VROOM!  644
+Valentine Magic  141
+Valentine's Day Disaster  755
+Victoria is Victorious  6488
+Villages Around the World  801
+Villages in the Sky  1327
+Visiting Golden Gate Park  194
+Visiting the Farm  77
+Visiting the Market  173
+Volunteerism and You: A World of Opportunities!  14998
+Voyage to Pluto  732
+Wagging the Tales  22813
+Waiting for Miss Liberty  683
+Waiting for a Taste of Summer  169
+Wake Up to Weather  60
+Wake Up!  256
+Waking Farmer Fred  126
+Waking Up a President!  716
+Walk to Daddy  35
+Walking Like a Dinosaur  802
+Walking for My Life  838
+Walking in Tires  454
+Watch Them Go  48
+Watch Your Block  1094
+Watch a Bulb Grow  47
+Watching Roberto  2987
+Watching Wild Baboons: How do they hunt for food?  822
+Watching Worms  387
+Watching and Waiting  146
+Watching the Sun "Rot"  531
+We Can Clean!  24
+We Didn't Know  170
+We Dig Down  65
+We Like It! We Don't Like It!  288
+We Like Jan!  25
+We Love To . . .  25
+We Sit  58
+We Will Walk  1045
+We Will!  145
+We the Peoples: A Look at the United Nations  23482
+We're Not the Same At All!  498
+We're Scary!  147
+We've Learned So Much  166
+Weather Signs and Rhymes  471
+Weaving in My Mango Tree  316
+Wedding Traditions  1009
+Weird Buildings  1106
+Weirdest of All  811
+Welcome Home to America  2418
+Welcome to Pre-K  147
+Welcome to the Neighborhood  174
+Welcoming a New Neighbor  165
+Wet or Dry?  10
+What Am I?  1144
+What Are You Doing?  122
+What Are You Touching?  50
+What Are the Birds Eating?: Some kind of food was hidden in the sand.  658
+What Are the Chances?  515
+What Can Quill Do Today?  53
+What Can We Do?  200
+What Can Wind Do?  43
+What Can You Do with Water?  42
+What Cat Found  42
+What Dinosaurs Left Behind  766
+What Do Cats Collect?  34
+What Do You Hear?  57
+What Do You See?  60
+What Do You Smell?  58
+What Do You Taste?  65
+What Friends Do  7
+What Gold Brings  800
+What Happened to Max's Hat?  171
+What I Like  20
+What Is Gravity  109
+What Is It?  165
+What Is That?  151
+What Is a Friend?  73
+What Makes a Good Scientist?  711
+What Makes a Rainbow?  263
+What Rhymes with Cat?  179
+What Time Is It?  49
+What Wacky Weather!  124
+What Will Sherman Shoot?  73
+What Will You Do Today?  41
+What Will You Get, Ben Illurak?  530
+What Will You Wear?  138
+What Would You Do?  736
+What a Pet Needs  35
+What a Pro Knows: A Career in Crayons  417
+What a Pro Knows: A Passion for Penguins  470
+What a Pro Knows: Adventures with Animals  506
+What a Pro Knows: Bringing Costumes to Life  588
+What a Pro Knows: Bringing Music to Life  532
+What a Pro Knows: Bubble Science  574
+What a Pro Knows: Cooking for Canines  498
+What a Pro Knows: Crayon Artist  322
+What a Pro Knows: Dazzling Dave Spins Delight  496
+What a Pro Knows: Living in Space  584
+What a Pro Knows: Magician at Work  426
+What a Pro Knows: Making Movies  735
+What a Pro Knows: Ordinary Heroes  679
+What a Pro Knows: Playing to Win  583
+What a Pro Knows: Prepared to Save Lives  721
+What a Pro Knows: Something Sweet  542
+What a Pro Knows: Tips from a Cartoonist  293
+What a Surprise!  219
+What an Astronaut Sees: Photos from space!  75
+What is Matter?  10
+What is Sand?  61
+What is a Shadow?  40
+What the Storm Brought  6891
+What to Make?  55
+What to Wear in Outer Space  142
+What's Behind Our Ha-Ha-Ha's  206
+What's New?  165
+What's So Hot About SPICES?  758
+What's That You're Saying  589
+What's Wrong with Farley?  428
+What's Wrong?  182
+What's a Bear to Eat?  765
+What's a Bookworm?  163
+What's a Kloosh?: Based on an American folktale  482
+What's in a Picture?  35
+What's in a Whistle?  789
+What's in the Stuffing?  156
+What's the Big Idea: The Story of Thomas Edison  804
+Wheels Go 'Round  150
+Wheels on the Go  187
+When Benny Was Lost  433
+When Cat and Rat Were Friends: A Folktale From Africa  478
+When Do Monkeys Talk  368
+When Friends Hurt  238
+When Kids Hunt Fossils  819
+When Miss Parson Forgot Halloween  720
+When My Pigs Saved the Day  677
+When Stars Explode  794
+When Teasing Hurts  133
+When They Grow Up  36
+When We Were One  64
+When Will It Snow?  508
+When the Moon Turns Dark  566
+Where Are My Shoes?  150
+Where Are They Going?  156
+Where Bubba Sleeps  75
+Where Do Animals Live  51
+Where Do I Fit In?  7340
+Where Do We Live?  51
+Where Do You Nap?  14
+Where Do the Sea Turtles Go?  702
+Where Does It Belong?  172
+Where Does Lost Lake Go?  621
+Where Has Ava Gone?  41
+Where Is Felix Hiding?  127
+Where Is Little Bear's Hat?  68
+Where Is Mary?  151
+Where Is Pokey?  158
+Where Walruses Chill Out: Life for the walrus rests on ice.  758
+Where We Live  135
+Where Will I Stay Tonight?: Homeless in America  2524
+Where is Baby Bunny?  40
+Where's Bear?  65
+Where's Charlie?  173
+Where's Daisy?  150
+Where's Honey?  338
+Where's Jasper?  137
+Where's My Shadow?  451
+Where's Snoodles?  121
+Where's Teddy?  24
+Where's Your Belly Button?  34
+Which Pet Can We Get?  79
+Which Planet Circles the Sun the Fastest? and Other Questions About Space  317
+Which Shoes to Choose?  157
+Which Way On a Rainy Day  12
+Who Am I?  55
+Who Can Get the Cheese?  91
+Who Can Go In?  33
+Who Has Cheeks?  364
+Who Has Seen My Goat?  84
+Who Is . . .  46
+Who Is It?  146
+Who Is a Hero?: Maybe it's you.  584
+Who Knows How?  57
+Who Likes Rain  35
+Who Loves the Cholla Cactus?  137
+Who Says "Boo?"  32
+Who Says Moo?  169
+Who Says Whoo?  107
+Who Shares?  21
+Who Touched the Poster?  182
+Who Wants to Be a Flower Girl?  252
+Who Wants to Play?  173
+Who Will Move In?  134
+Who Will Play with Me?  99
+Who Wins?  159
+Who's Going to School?  180
+Who's Moving In?  149
+Who's Ready to Ride?  197
+Who's That Creepy Crawler?  358
+Who's There?  106
+Who's the Fairest in the Kingdom?  412
+Whoo and Coo  24
+Whose Dinner Is This?  218
+Why Bears Sleep All Winter: A Tale from Lapland  463
+Why Catch Bats?: Scientists net them-but only to protect them.  777
+Why Do Astronauts Wear White Space Suits? and Other Questions About Space  291
+Why Do Cliff Swallows Live Together?  787
+Why Does a Woodpecker Peck?  371
+Why Fish Like School  130
+Why Is the Sky Blue?  484
+Why Is the Sun So Hot? and Other Questions About Space  418
+Why Mockingbird Sings Many Songs: A Folktale From the Navajo  444
+Why the Sky Is Far Away: A Nigerian Folktake  695
+Wibble-Wobble Bike  122
+Wiggly Worms  110
+Wild Man  793
+Wild Turkey  187
+Wildlife "Mug Shots"  459
+Wildlife Rehabilitator  131
+Wildlife in Africa Then and Now  787
+Wildlife on the East African Savannah  2083
+Will You Find Me?  170
+Wind Power  152
+Windows That Capture the Sun: Artist Marc Chagall put stained glass in a new light.  767
+Wings  808
+Winning Is Her Goal  364
+Winter Fun in the City  183
+Winter Is Coming!  41
+Winter: Nature Asleep  376
+With Dot  64
+Wolf Dressed in Fire  701
+Wolf Spider  107
+Wolves and Their Ways  3670
+Work in the Garden  170
+Working Together  168
+Working for Lunch  423
+Worms  127
+Wrapped with Love  160
+Wrong-Way Planet: It's big, bloated, and backward.  795
+Yan at Bat  24
+Yes, I Can: The Story of Jim Abbott  924
+Yes, Please!  165
+You Can Do It!  47
+You Can Read...  21
+You Can Recycle Too  41
+You Can't Judge . . .: a book report by its cover. Or can you?  795
+You Decide  55
+You Have Muscles!  38
+Your Wonderful Body  32
+Yours in Malawi  506
+Zachary's Menorah  483
+Zaki's Challenge  830
+Zebra and Wasp  348
+Zebulon and the Two Biscuits  670
+Zhu Li's Gentle Giant  727
+Zizi and the Lemon Cart  551
+Zoo Helpers  128
+Zoo Race  197`;
+
+// データパース
+const BOOKS = [];
+RAW_BOOKS.trim().split('\n').forEach(line => {
+  line = line.trim();
+  const m = line.match(/^(.+?)\s{2,}(\d+)$/);
+  if (m) BOOKS.push([m[1], parseInt(m[2])]);
+});
+
+// ===== 状態 =====
+let books = [];
+let acIndex = -1;
+let acMatches = [];
+
+// ===== オートコンプリート =====
+function onInput() {
+  const q = document.getElementById('in-title').value.trim().toLowerCase();
+  const drop = document.getElementById('ac-drop');
+  document.getElementById('in-words').value = '';
+  acIndex = -1;
+
+  if (q.length < 1) { drop.style.display = 'none'; return; }
+
+  acMatches = BOOKS.filter(([t]) => t.toLowerCase().includes(q)).slice(0, 40);
+
+  if (acMatches.length === 0) {
+    drop.innerHTML = '<div class="ac-none">候補なし</div>';
+  } else {
+    drop.innerHTML = acMatches.map(([t, w], i) =>
+      `<div class="ac-item" data-i="${i}" onmousedown="selectBook(${i})">
+        <span>${t}</span>
+        <span class="ac-words">${w.toLocaleString()} w</span>
+       </div>`
+    ).join('');
+  }
+  drop.style.display = 'block';
+}
+
+function onKey(e) {
+  const items = document.querySelectorAll('.ac-item');
+  if (e.key === 'ArrowDown') {
+    e.preventDefault();
+    acIndex = Math.min(acIndex + 1, items.length - 1);
+    items.forEach((el, i) => el.classList.toggle('active', i === acIndex));
+  } else if (e.key === 'ArrowUp') {
+    e.preventDefault();
+    acIndex = Math.max(acIndex - 1, 0);
+    items.forEach((el, i) => el.classList.toggle('active', i === acIndex));
+  } else if (e.key === 'Enter') {
+    if (acIndex >= 0 && acMatches[acIndex]) {
+      selectBook(acIndex);
+    } else {
+      addBook();
+    }
+  } else if (e.key === 'Escape') {
+    closeDropdown();
+  }
+}
+
+function selectBook(i) {
+  const [title, words] = acMatches[i];
+  document.getElementById('in-title').value = title;
+  document.getElementById('in-words').value = words.toLocaleString();
+  closeDropdown();
+  document.getElementById('in-date').focus();
+}
+
+function closeDropdown() {
+  document.getElementById('ac-drop').style.display = 'none';
+  acIndex = -1;
+}
+
+// ===== 本の追加・削除 =====
+function addBook() {
+  const date  = document.getElementById('in-date').value.trim();
+  const title = document.getElementById('in-title').value.trim();
+  const raw   = document.getElementById('in-words').value.replace(/,/g, '');
+  const words = parseInt(raw) || 0;
+
+  if (!title) { document.getElementById('in-title').focus(); return; }
+
+  books.push({ date, title, words });
+  document.getElementById('in-title').value = '';
+  document.getElementById('in-words').value = '';
+  closeDropdown();
+  document.getElementById('in-title').focus();
+  render();
+}
+
+function removeBook(i) {
+  books.splice(i, 1);
+  render();
+}
+
+// ===== メタ更新 =====
+function updateMeta() {
+  const name  = document.getElementById('child-name').value;
+  const start = document.getElementById('start-date').value;
+  const end   = document.getElementById('end-date').value;
+  document.getElementById('hdr-name').textContent = name;
+  let p = '';
+  if (start && end) p = start + ' 〜 ' + end;
+  else if (start) p = start + ' 〜';
+  else if (end)   p = '〜 ' + end;
+  document.getElementById('hdr-period').textContent = p;
+}
+
+// ===== 描画 =====
+function render() {
+  // 追加済みリスト
+  const list = document.getElementById('book-list');
+  if (!books.length) { list.innerHTML = ''; }
+  else {
+    let run = 0;
+    list.innerHTML = books.map((b, i) => {
+      run += b.words;
+      return `<div class="book-item">
+        <span class="bi-num">${i+1}</span>
+        <span class="bi-date">${b.date}</span>
+        <span class="bi-title">${b.title}</span>
+        <span class="bi-words">${b.words.toLocaleString()} w</span>
+        <button class="btn-del" onclick="removeBook(${i})">×</button>
+      </div>`;
+    }).join('');
+  }
+
+  // 数字を1桁ずつtdに分割（count桁、左ゼロ埋めなし）
+  function digitCells(n, count = 5) {
+    const s = n > 0 ? String(n) : '';
+    const padded = s.padStart(count, '\u0000'); // nullで左埋め
+    return Array.from(padded).map(c =>
+      `<td class="col-digit">${c === '\u0000' ? '' : c}</td>`
+    ).join('');
+  }
+  const EMPTY_DIGITS = '<td class="col-digit"></td>'.repeat(5);
+  const EMPTY_WC = `<td class="col-wclabel"></td>${EMPTY_DIGITS}<td class="col-wclabel"></td>${EMPTY_DIGITS}`;
+
+  // テーブル（1冊 = 2行: 上段にデータ、下段は空白線）
+  const MIN_ROWS = 10;
+  let runTotal = 0;
+  const entries = [];
+  books.forEach((b, i) => {
+    runTotal += b.words;
+    entries.push(`<tr>
+      <td class="col-no" rowspan="2">${i + 1}</td>
+      <td class="col-date" rowspan="2">${b.date}</td>
+      <td class="col-title" rowspan="2">${b.title}</td>
+      <td class="col-wclabel">この本</td>${digitCells(b.words)}<td class="col-wclabel">累計</td>${digitCells(runTotal)}
+    </tr><tr>${EMPTY_WC}</tr>`);
+  });
+  while (entries.length < MIN_ROWS) {
+    entries.push(`<tr>
+      <td class="col-no" rowspan="2"></td>
+      <td class="col-date" rowspan="2"></td>
+      <td class="col-title" rowspan="2"></td>
+      ${EMPTY_WC}
+    </tr><tr>${EMPTY_WC}</tr>`);
+  }
+  document.getElementById('log-body').innerHTML = entries.join('');
+}
+
+// ===== インポート =====
+function toggleImport() {
+  const el = document.getElementById('import-section');
+  const btn = document.querySelector('.import-toggle');
+  const shown = el.style.display !== 'none';
+  el.style.display = shown ? 'none' : 'block';
+  btn.textContent = shown ? '▼ スクショから自動で取り込む' : '▲ スクショから自動で取り込む';
+}
+
+function updateFilename() {
+  const input = document.getElementById('screenshot-input');
+  const label = document.getElementById('ocr-filename');
+  label.textContent = input.files.length
+    ? input.files.length + '枚選択中'
+    : '未選択';
+}
+
+// Tesseract.jsを必要になったときだけ読み込む
+let tesseractReady = false;
+function loadTesseract() {
+  return new Promise((resolve, reject) => {
+    if (tesseractReady) { resolve(); return; }
+    const s = document.createElement('script');
+    s.src = 'https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js';
+    s.onload = () => { tesseractReady = true; resolve(); };
+    s.onerror = () => reject(new Error('Tesseract.jsの読み込みに失敗しました'));
+    document.head.appendChild(s);
+  });
+}
+
+async function processScreenshots() {
+  const input = document.getElementById('screenshot-input');
+  if (!input.files.length) { alert('画像を選択してください'); return; }
+
+  const statusEl = document.getElementById('ocr-status');
+  statusEl.style.display = 'block';
+  statusEl.textContent = 'Tesseract.js を読み込み中...';
+
+  try {
+    await loadTesseract();
+  } catch(e) {
+    statusEl.textContent = e.message;
+    return;
+  }
+
+  let allImported = 0;
+  let allNotFound = [];
+  const files = input.files;
+
+  for (let i = 0; i < files.length; i++) {
+    statusEl.textContent = `読み取り中... ${i + 1} / ${files.length} 枚目`;
+    try {
+      const { data: { text } } = await Tesseract.recognize(files[i], 'eng');
+      const extracted = parseOcrText(text);
+      for (const { title, date } of extracted) {
+        const { matchedTitle, words, found } = lookupWords(title);
+        if (!found) allNotFound.push(title);
+        books.push({ date, title: matchedTitle, words });
+        allImported++;
+      }
+    } catch(e) {
+      console.error('OCRエラー:', e);
+    }
+  }
+
+  statusEl.style.display = 'none';
+  document.getElementById('import-section').style.display = 'none';
+  document.querySelector('.import-toggle').textContent = '▼ スクショから自動で取り込む';
+  input.value = '';
+  document.getElementById('ocr-filename').textContent = '未選択';
+  render();
+
+  if (allImported > 0) {
+    let msg = allImported + '件取り込みました！';
+    if (allNotFound.length) {
+      msg += '\n\n語数が見つからなかった本（' + allNotFound.length + '件）は語数0になっています：\n'
+           + allNotFound.slice(0,5).join('\n')
+           + (allNotFound.length > 5 ? '\n...' : '');
+    }
+    alert(msg);
+  } else {
+    alert('読み取れた本が見つかりませんでした。\nスクショがHighlightsのMy History画面か確認してください。');
+  }
+}
+
+// OCRテキストを解析してCompleted本のみ抽出
+function parseOcrText(text) {
+  const MONTH = {jan:1,feb:2,mar:3,apr:4,may:5,jun:6,jul:7,aug:8,sep:9,oct:10,nov:11,dec:12};
+  const lines = text.split('\n').map(l => l.trim()).filter(l => l.length > 1);
+  const result = [];
+  let titleLines = [];
+
+  for (const line of lines) {
+    // "Read 2026-21-Apr | Completed!" のような行
+    const readMatch = line.match(/Read\s+(\d{4})-(\d{1,2})-([A-Za-z]{3})/i);
+    if (readMatch) {
+      const day   = parseInt(readMatch[2]);
+      const month = MONTH[readMatch[3].toLowerCase().slice(0,3)] || 1;
+      const date  = month + '/' + day;
+      const completed = /completed/i.test(line);
+      if (completed && titleLines.length > 0) {
+        result.push({ title: titleLines.join(' ').trim(), date });
+      }
+      titleLines = [];
+      continue;
+    }
+    // メタデータ行はスキップ
+    if (/^(Series|Type|Level|Still reading|Completed|Assignment|General|Books)\b/i.test(line)) continue;
+    // 数字だけの行・短すぎる行はスキップ
+    if (/^\d+$/.test(line) || line.length < 2) continue;
+    titleLines.push(line);
+  }
+  return result;
+}
+
+// 語数DB検索（正規化して照合）
+function lookupWords(title) {
+  function normalize(s) {
+    return s.toLowerCase().replace(/['''"":,.\-!?™®]/g,'').replace(/\s+/g,' ').trim();
+  }
+  const norm = normalize(title);
+  let found = BOOKS.find(([t]) => normalize(t) === norm);
+  if (!found) found = BOOKS.find(([t]) => normalize(t).includes(norm) || norm.includes(normalize(t)));
+  return {
+    matchedTitle: found ? found[0] : title,
+    words: found ? found[1] : 0,
+    found: !!found
+  };
+}
+
+// 初期描画
+render();
+</script>
+</body>
+</html>
