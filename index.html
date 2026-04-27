@@ -338,7 +338,7 @@
 
       @page {
         size: auto;
-        margin: 10mm;
+        margin: 8mm 8mm 20mm 8mm; /* 下を多めに：ブラウザのURL/ページ番号フッター分 */
       }
 
       .print-wrapper {
@@ -348,14 +348,14 @@
         height: 100%;
       }
 
-      .log-sheet { border-width: 1.5pt; overflow: visible; flex: 1; }
+      .log-sheet { border-width: 1.5pt; overflow: hidden; flex: 1; }
 
       .log-table td, .log-table th { font-size: 5.5pt; border-color: #888; padding: 0 1pt; }
       .lbl { font-size: 5pt; }
       .col-title { font-size: 5pt; white-space: normal; line-height: 1.2; }
       .col-wclabel { font-size: 4pt; }
       .col-digit { font-size: 5.5pt; }
-      .log-table tbody tr { height: 20pt; }
+      .log-table tbody tr { height: 16pt; }
       .log-table tbody tr.row-kono td { border-bottom: 0.5pt dotted #aaa; }
       .log-table tbody tr.row-ruikei td { border-top: none; }
 
